@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donation Checker – Evergreen Goodwill</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --eg-green:       #00653a;
+    --eg-green-dark:  #004d2b;
+    --eg-green-light: #e6f2ec;
+    --eg-green-mid:   #c2ddd0;
+    --eg-accent:      #f5a623;
+    --eg-red:         #c0392b;
+    --eg-red-light:   #fdf0ee;
+    --eg-blue:        #1a5fa8;
+    --eg-blue-light:  #eaf1fb;
+    --eg-text:        #1a1a1a;
+    --eg-muted:       #5a6672;
+    --eg-border:      #d4dde4;
+    --eg-white:       #ffffff;
+    --eg-bg:          #f7faf8;
+    --radius:         10px;
+    --shadow:         0 2px 12px rgba(0,101,58,.10);
+  }
+  #egnw-checker {
+    font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif;
+    color: var(--eg-text);
+    background: var(--eg-bg);
+    border: 1.5px solid var(--eg-green-mid);
+    border-radius: 16px;
+    padding: 32px 28px 36px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .egnw-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 26px; }
+  .egnw-icon { flex-shrink: 0; width: 48px; height: 48px; background: var(--eg-green); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .egnw-icon svg { width: 26px; height: 26px; }
+  .egnw-title { font-size: 22px; font-weight: 700; color: var(--eg-green-dark); line-height: 1.2; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; }
+  .egnw-subtitle { font-size: 14px; color: var(--eg-muted); margin-top: 4px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; }
+  .egnw-search-wrap { position: relative; margin-bottom: 10px; }
+  .egnw-search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; stroke: var(--eg-muted); fill: none; pointer-events: none; }
+  #egnw-input { width: 100%; padding: 14px 14px 14px 44px; font-size: 16px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; border: 1.5px solid var(--eg-border); border-radius: var(--radius); background: var(--eg-white); color: var(--eg-text); outline: none; transition: border-color .2s, box-shadow .2s; }
+  #egnw-input:focus { border-color: var(--eg-green); box-shadow: 0 0 0 3px rgba(0,101,58,.12); }
+  #egnw-input::placeholder { color: #9aaba4; }
+  #egnw-suggestions { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--eg-white); border: 1.5px solid var(--eg-border); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 100; overflow: hidden; display: none; max-height: 300px; overflow-y: auto; }
+  .egnw-suggestion { padding: 11px 16px; font-size: 14px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background .12s; }
+  .egnw-suggestion:hover, .egnw-suggestion.active { background: var(--eg-green-light); }
+  .sug-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sug-dot.accepted { background: var(--eg-green); }
+  .sug-dot.rejected { background: var(--eg-red); }
+  .sug-category { font-size: 11px; color: var(--eg-muted); margin-left: auto; }
+  #egnw-result { display: none; margin-top: 20px; animation: egFadeUp .25s ease; }
+  @keyframes egFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .egnw-result-card { border-radius: var(--radius); overflow: hidden; border: 1.5px solid var(--eg-border); box-shadow: var(--shadow); }
+  .egnw-result-card.accepted .result-header { background: var(--eg-green); }
+  .egnw-result-card.rejected .result-header { background: var(--eg-red); }
+  .result-header { padding: 18px 20px; }
+  .result-header-inner { padding-left: 14px; border-left: 3px solid rgba(255,255,255,.35); }
+  .result-status { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: white; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; }
+  .result-status svg { width: 24px; height: 24px; flex-shrink: 0; }
+  .result-item-name { font-size: 13px; color: rgba(255,255,255,.80); margin-top: 3px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; padding-left: 34px; }
+  .result-body { background: var(--eg-white); padding: 20px; }
+  .result-section { margin-bottom: 18px; }
+  .result-section:last-child { margin-bottom: 0; }
+  .result-section-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--eg-muted); margin-bottom: 6px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; }
+  .result-section-text { font-size: 14px; color: var(--eg-text); line-height: 1.6; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; }
+  .car-donation-notice { background: #eaf4e8; border: 1px solid #aed6ae; border-radius: 8px; padding: 14px 16px; margin-bottom: 18px; }
+  .car-donation-notice p { font-size: 14px; color: #1a4d1a; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; line-height: 1.6; margin: 0 0 10px; }
+  .car-donation-notice p:last-child { margin: 0; }
+  .car-donation-notice strong { font-weight: 600; }
+  .car-donate-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; background: var(--eg-green); color: white; border-radius: var(--radius); text-decoration: none; font-size: 14px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; font-weight: 600; transition: background .15s; }
+  .car-donate-btn:hover { background: var(--eg-green-dark); }
+  .car-donate-btn svg { width: 15px; height: 15px; stroke: white; fill: none; flex-shrink: 0; }
+  .car-phone { display: inline-block; margin-top: 8px; font-size: 13px; color: var(--eg-green-dark); font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; font-weight: 600; text-decoration: none; }
+  .car-phone:hover { text-decoration: underline; }
+  .electronics-notice svg { flex-shrink: 0; width: 18px; height: 18px; stroke: var(--eg-blue); fill: none; margin-top: 1px; }
+  .electronics-notice p { font-size: 13px; color: #174a80; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; line-height: 1.5; margin: 0; }
+  .electronics-notice strong { font-weight: 600; }
+  .county-picker-wrap { background: var(--eg-green-light); border: 1px solid var(--eg-green-mid); border-radius: 8px; padding: 14px 16px; margin-bottom: 18px; }
+  .county-picker-label { font-size: 13px; font-weight: 600; color: var(--eg-green-dark); margin-bottom: 8px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; }
+  .county-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .county-btn { padding: 6px 13px; border-radius: 20px; border: 1.5px solid var(--eg-green); background: white; color: var(--eg-green); font-size: 13px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; cursor: pointer; transition: all .15s; font-weight: 500; }
+  .county-btn:hover, .county-btn.selected { background: var(--eg-green); color: white; }
+  .disposal-links { display: flex; flex-direction: column; gap: 8px; }
+  .disposal-link { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--eg-bg); border: 1px solid var(--eg-border); border-radius: 8px; text-decoration: none; transition: border-color .15s, background .15s; }
+  .disposal-link:hover { border-color: var(--eg-green); background: var(--eg-green-light); }
+  .disposal-link-icon { flex-shrink: 0; width: 20px; height: 20px; background: var(--eg-green); border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .disposal-link-icon svg { width: 12px; height: 12px; stroke: white; fill: none; }
+  .disposal-link-text { flex: 1; }
+  .disposal-link-name { font-size: 13px; font-weight: 600; color: var(--eg-green-dark); font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; }
+  .disposal-link-desc { font-size: 12px; color: var(--eg-muted); font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; margin-top: 1px; }
+  .egnw-hint { text-align: center; padding: 28px 0 8px; color: var(--eg-muted); font-size: 14px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; }
+  .egnw-hint svg { width: 36px; height: 36px; stroke: var(--eg-green-mid); fill: none; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; }
+  .egnw-footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--eg-border); font-size: 12px; color: var(--eg-muted); font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; text-align: center; line-height: 1.5; }
+  .egnw-footer a { color: var(--eg-green); text-decoration: none; }
+  .egnw-footer a:hover { text-decoration: underline; }
+  .condition-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-family: 'Franklin Gothic Medium', 'Franklin Gothic', 'ITC Franklin Gothic', 'Libre Franklin', Arial Narrow, Arial, sans-serif; font-weight: 500; }
+  .chip.ok { background: var(--eg-green-light); color: var(--eg-green-dark); }
+  .chip.no { background: var(--eg-red-light); color: var(--eg-red); }
+</style>
+</head>
+<body>
+<div id="egnw-checker">
+  <div class="egnw-header">
+    <div class="egnw-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 9c0-1.657 1.343-3 3-3s3 1.343 3 3c0 1.5-1.5 2.5-3 3"/>
+        <circle cx="12" cy="18" r="1" fill="white" stroke="none"/>
+      </svg>
+    </div>
+    <div>
+      <div class="egnw-title">Can I Donate This?</div>
+      <div class="egnw-subtitle">Search any item to see if Evergreen Goodwill can accept it — and where to take it if not.</div>
+    </div>
+  </div>
+
+  <div class="egnw-search-wrap">
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="egnw-input" placeholder="e.g. blender, jeans, lamp, batteries, paint…" autocomplete="off" aria-label="Search for a donation item" aria-controls="egnw-suggestions" aria-expanded="false">
+    <div id="egnw-suggestions" role="listbox" aria-label="Suggested items"></div>
+  </div>
+
+  <div id="egnw-hint" class="egnw-hint">
+    <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Type an item above to check donation eligibility.
+  </div>
+
+  <div id="egnw-result" role="region" aria-live="polite" aria-label="Donation result"></div>
+
+  <div class="egnw-footer">
+    Guidelines subject to change.<br>Donation attendants will assess condition and have the authority to deny or accept any item.
+  </div>
+</div>
+
+<script>
+(function() {
+
+// ── ITEM DATABASE ────────────────────────────────────────────────────────────
+// status: "accepted" | "rejected"
+// category: display label for suggestion list
+// electronics: true = show data-wipe / e-cycle notice
+// conditions: [{ok, text}]
+// notes: main description
+// disposal: key into DISPOSAL map (rejected items only)
+
+const ITEMS = [
+
+  // ── CLOTHING & ACCESSORIES ──────────────────────────────────────────────
+  { name:"Clothing", category:"Clothing & Accessories",
+    keywords:["cloth","shirt","pants","jeans","jacket","coat","dress","skirt","sweater","socks","underwear","bra","bras","sports bra","bralette","underwire bra","lingerie","panties","boxers","briefs","thong","shapewear","camisole","tank top","shoes","boots","hat","scarf","gloves","blouse","hoodie","shorts","leggings","suit","tie","blazer","vest","cardigan","turtleneck","polo","sportswear","activewear","pajamas","nightgown","robe","swimsuit","bikini","trunks","uniform","scrubs","overalls","romper","jumpsuit","onesie","warmup"],
+    status:"accepted", notes:"Good news — your wardrobe cleanout is our treasure! Clean, wearable clothing in good condition is always welcome.",
+    conditions:[{ok:true,text:"Clean & wearable"},{ok:false,text:"Wet, moldy, or heavily soiled"}] },
+
+  { name:"Shoes & Footwear", category:"Clothing & Accessories",
+    keywords:["shoes","boots","sneakers","sandals","heels","flats","loafers","oxfords","clogs","slippers","flip flops","moccasins","wedges","pumps","stilettos","ankle boots","knee boots","rain boots","galoshes","cleats","athletic shoes","running shoes","dress shoes","work boots","steel toe"],
+    status:"accepted", notes:"Got shoes that still have miles left in them? Bring 'em in! Pairs in wearable condition are always accepted.",
+    conditions:[{ok:true,text:"Both shoes present & wearable"},{ok:false,text:"Heavily worn, falling apart, or mismatched"}] },
+
+  { name:"Handbags & Purses", category:"Clothing & Accessories",
+    keywords:["handbag","purse","tote","clutch","backpack","wallet","bag","satchel","crossbody","messenger bag","duffel bag","fanny pack","wristlet","laptop bag"],
+    status:"accepted", notes:"Out with the old, in with someone else's new favorite bag! Handbags, purses, backpacks, and bags in good condition are happily accepted." },
+
+  { name:"Belts & Ties", category:"Clothing & Accessories",
+    keywords:["belt","tie","necktie","bow tie","suspenders","lanyard"],
+    status:"accepted", notes:"Belts, ties, and accessories in good condition are accepted — even that tie your uncle gave you that you've never worn." },
+
+  { name:"Jewelry & Watches", category:"Clothing & Accessories",
+    keywords:["jewelry","jewellery","necklace","bracelet","earrings","ring","watch","brooch","pendant","chain","anklet","cufflinks"],
+    status:"accepted", notes:"Bling, baubles, and beyond — costume jewelry and watches in any condition are accepted. Fine jewelry is welcome too. Someone out there is going to feel very fancy." },
+
+  { name:"Coins & Currency", category:"Collectibles",
+    keywords:["coin","coins","loose change","change","pennies","quarters","dimes","nickels","pocket change","spare change","collectible coin","rare coin","commemorative coin","silver coin","gold coin","coin collection","coin set","proof coin","mint coin","foreign coin","foreign currency","currency","dollar coin","half dollar","morgan dollar","silver dollar","wheat penny","buffalo nickel","coin roll","piggy bank","currency collection","numismatic","paper money","banknote","bill","old money"],
+    status:"accepted",
+    notes:"We love coins — every single one! Loose change and spare coins are donated directly to support Evergreen Goodwill's tuition-free education programs for the community, so even that rogue penny at the bottom of your bag makes a difference. Collectible, rare, or commemorative coins are evaluated and sold, with proceeds supporting our mission. It all adds up to something meaningful." },
+
+
+
+  { name:"Hats & Scarves", category:"Clothing & Accessories",
+    keywords:["hat","scarf","cap","beanie","beret","fedora","baseball cap","winter hat","sun hat","fascinator","headband","hair accessories","gloves","mittens"],
+    status:"accepted", notes:"Hats, scarves, gloves, and accessories in good condition are accepted. One person's forgotten beanie is another person's favorite winter staple." },
+
+  { name:"Sunglasses & Eyewear", category:"Clothing & Accessories",
+    keywords:["sunglasses","sunnies","shades","reading glasses","eyeglasses","glasses","spectacles","eyewear","prescription glasses","frames","optical frames","safety glasses","goggles","ski goggles","swim goggles","aviators","wayfarers","designer sunglasses"],
+    status:"accepted",
+    notes:"Sunglasses and eyewear in good condition are accepted — scratched lenses and all. Designer shades, readers, frames, and goggles are all welcome. Someone's whole look is about to come together.",
+    conditions:[
+      {ok:true, text:"Any style or brand in wearable condition"},
+      {ok:false,text:"Severely scratched or broken frames"}
+    ] },
+
+  { name:"Wet or Soiled Clothing", category:"Clothing & Accessories",
+    keywords:["wet clothing","soiled clothing","moldy clothes","dirty clothes","stained clothes"],
+    status:"rejected", notes:"We love a second chance story, but even we have limits. Clothing that is wet, heavily soiled, or moldy isn't something we can accept — our staff will thank you for leaving those ones out.",
+    disposal:"textile" },
+
+  // ── FURNITURE ──────────────────────────────────────────────────────────
+  { name:"Large Furniture", category:"Furniture",
+    keywords:["large furniture","oversized furniture","big furniture","sectional sofa","large sectional","large couch","large sofa","large table","dining room set","bedroom set","furniture set","large cabinet","armoire","china hutch","large bookcase","large wardrobe","wall unit","entertainment wall","large dresser","triple dresser","large chest","king bed frame","california king","large desk","antique furniture","solid wood furniture","heavy furniture"],
+    status:"rejected",
+    notes:"As a general rule, if it's larger than a standard dresser or a sofa, we likely won't be able to accept it. Our stores have limited floor space and our team has limited lifting capacity — we mean that in the nicest possible way. When in doubt, call ahead or ask a donation attendant before unloading. Your county transfer station, Buy Nothing group, or Facebook Marketplace may be a great fit for larger pieces.",
+    disposal:"bulk_item" },
+
+  { name:"Sofas & Couches", category:"Furniture",
+    keywords:["sofa","couch","loveseat","settee","futon couch","chaise","daybed"],
+    status:"accepted", notes:"A good sofa can change someone's whole living room situation — standard-sized sofas and loveseats in clean, good condition are accepted. As a general size guide, if it's larger than a standard sofa we likely won't be able to take it. Stain-free, tear-free, and smell-free, please. We're picky on behalf of future shoppers.",
+    conditions:[{ok:true,text:"Standard size, clean, dry & undamaged"},{ok:false,text:"Oversized or sectional sofas"},{ok:false,text:"Stained, torn, wet, or odorous"},{ok:false,text:"Sofa beds / hide-a-beds"}] },
+
+  { name:"Sectional Sofa", category:"Furniture",
+    keywords:["sectional","sectional sofa","l shaped sofa","u shaped sofa","modular sofa","large sectional","sectional couch"],
+    status:"rejected",
+    notes:"Sectional sofas are too large for us to accept — they're a logistics puzzle we don't have the floor space to solve. Your county transfer station or a furniture resale shop might be a better fit.",
+    disposal:"bulk_item" },
+
+  { name:"Sofa Bed / Hide-a-Bed", category:"Furniture",
+    keywords:["sofa bed","hide-a-bed","sleeper sofa","pull out sofa","fold out sofa"],
+    status:"rejected", notes:"As cool as the concept is, hide-a-bed sofas are one magic trick we can't accept. The mechanical complexity and resale challenges make them a no-go for us.",
+    disposal:"bulk_item" },
+
+  { name:"Tables", category:"Furniture",
+    keywords:["table","dining table","coffee table","end table","side table","console table","kitchen table","folding table","accent table","sofa table","writing table"],
+    status:"accepted", notes:"A good table brings people together — and we'd love to help yours find a new family. Standard-sized tables in good, sturdy condition are accepted. If it seats more than six or needs a truck to move, it's probably too large for us.",
+    conditions:[{ok:true,text:"Standard size, sturdy & complete"},{ok:false,text:"Very large dining tables or sets"},{ok:false,text:"Broken, wobbly, or missing major parts"}] },
+
+  { name:"Chairs", category:"Furniture",
+    keywords:["chair","dining chair","armchair","accent chair","recliner","rocking chair","office chair","folding chair","bar stool","stool","ottoman","bean bag","gaming chair"],
+    status:"accepted", notes:"Pull up a chair — actually, pull up several. Clean seating in good condition is always accepted and always in demand.",
+    conditions:[{ok:true,text:"Clean & structurally sound"},{ok:false,text:"Torn upholstery, broken frame"}] },
+
+  { name:"Bookshelves & Shelving", category:"Furniture",
+    keywords:["bookshelf","bookcase","shelving","shelf","wall shelf","floating shelf","cube shelf","etagere"],
+    status:"accepted", notes:"Bookshelves and shelving units in good condition are accepted. Empty or full of memories — either way, we'll take them." },
+
+  { name:"Dressers & Chests", category:"Furniture",
+    keywords:["dresser","chest of drawers","bureau","nightstand","night table","bedside table","armoire","wardrobe","chiffonier"],
+    status:"accepted", notes:"Dressers and chests of drawers in good condition are accepted — a standard dresser is about our upper size limit for furniture, so keep that in mind for anything larger. Pro tip: all drawers should be present and actually work — we've seen things.",
+    conditions:[{ok:true,text:"Standard size, all drawers present & functional"},{ok:false,text:"Oversized armoires or triple dressers"}] },
+
+  { name:"Desks (Standard)", category:"Furniture",
+    keywords:["desk","computer desk","student desk","writing desk","secretary desk","small desk"],
+    status:"accepted", notes:"Standard desks in good condition are accepted — homework not included. Just note that very large or extremely heavy desks may not make the cut.",
+    conditions:[{ok:true,text:"Standard size, good condition"},{ok:false,text:"Very large or extremely heavy desks"}] },
+
+  { name:"Large Heavy Desk", category:"Furniture",
+    keywords:["large desk","heavy desk","executive desk","old heavy desk","massive desk"],
+    status:"rejected", notes:"We respect the commitment it took to own this desk, but very large or extremely heavy desks are not accepted. It's not you, it's the logistics.",
+    disposal:"bulk_item" },
+
+  { name:"Cabinets & Storage", category:"Furniture",
+    keywords:["cabinet","storage cabinet","media cabinet","tv cabinet","curio cabinet","china cabinet","display cabinet","buffet","sideboard","credenza","hutch","linen cabinet"],
+    status:"accepted", notes:"Smaller cabinets and storage furniture in good condition are accepted — the more organized, the better. Larger pieces like full china hutches, oversized armoires, or wall units are generally too large for our stores. When in doubt, call ahead.",
+    conditions:[{ok:true,text:"Smaller cabinets in good condition"},{ok:false,text:"Oversized hutches or wall units"},{ok:false,text:"Metal file cabinets (not accepted)"}] },
+
+  { name:"Metal File Cabinet", category:"Furniture",
+    keywords:["file cabinet","filing cabinet","metal filing cabinet","lateral file"],
+    status:"rejected", notes:"Metal file cabinets are a hard pass for us. The good news: scrap metal recyclers will actually be excited to see it.",
+    disposal:"scrap_metal" },
+
+  { name:"Mirrors", category:"Furniture",
+    keywords:["mirror","wall mirror","floor mirror","vanity mirror","decorative mirror","full length mirror"],
+    status:"accepted", notes:"Seven years of bad luck? Not here. Mirrors in good condition without chips or cracks are accepted — intact reflections only." },
+
+  { name:"Lamps & Lighting", category:"Furniture",
+    keywords:["lamp","table lamp","floor lamp","desk lamp","bedside lamp","chandelier","pendant light","sconce","light fixture","torchiere","arc lamp","banker lamp"],
+    status:"accepted", notes:"Let someone else's home shine a little brighter. Lamps and light fixtures in working condition are accepted — bulbs not required, just the magic.",
+    conditions:[{ok:true,text:"Working & complete (bulb not required)"},{ok:false,text:"Broken socket or frayed cord"}] },
+
+  { name:"Damaged or Wet Furniture", category:"Furniture",
+    keywords:["damaged furniture","broken furniture","stained furniture","wet furniture","torn furniture","moldy furniture"],
+    status:"rejected", notes:"We believe in second chances, but some furniture has had its third, fourth, and fifth. Wet, stained, torn, structurally damaged, or completely disassembled pieces can't make the cut — sorry.",
+    disposal:"bulk_item" },
+
+  { name:"New Flat-Pack Furniture", category:"Furniture",
+    keywords:["flat pack","flat-pack","ikea","assembly required","new in box furniture","boxed furniture"],
+    status:"accepted", notes:"New, in-box furniture requiring assembly is gratefully accepted! Yes, the instructions too — please." },
+
+  { name:"Sofa Bed / Futon Frame", category:"Furniture",
+    keywords:["futon frame","futon bed","hide-a-bed chair","sleeper chair"],
+    status:"rejected", notes:"A sofa AND a bed? Clever concept, but no thanks. Sofa beds and hide-a-beds are not accepted — the mechanical complexity is more drama than we can handle.",
+    disposal:"bulk_item" },
+
+  { name:"Bed Frame (Wood)", category:"Furniture",
+    keywords:["bed frame","wooden bed frame","headboard","footboard","platform bed","bed slats"],
+    status:"accepted", notes:"Wood bed frames, headboards, and footboards in good condition are accepted. Sweet dreams for the next owner.",
+    conditions:[{ok:true,text:"Wood/upholstered — good condition"},{ok:false,text:"Metal bed frames (not accepted)"}] },
+
+  { name:"Bed Frame (Metal)", category:"Furniture",
+    keywords:["metal bed frame","steel bed frame","iron bed frame"],
+    status:"rejected", notes:"Metal bed frames are a no from us — but scrap metal recyclers? They'll be delighted.",
+    disposal:"scrap_metal" },
+
+  { name:"Crib (standard / convertible)", category:"Furniture",
+    keywords:["crib","baby crib","infant crib","toddler crib","convertible crib","4-in-1 crib","mini crib"],
+    status:"rejected", notes:"Baby safety is no joke. Cribs are not accepted — the CPSC permanently banned drop-side cribs, and many older models don't meet current federal safety standards. Since we can't verify a crib's history, we have to say no to all of them. Better safe than sorry.",
+    disposal:"bulk_item" },
+
+  { name:"Drop-Side Crib", category:"Furniture",
+    keywords:["drop side crib","drop-side crib","sliding side crib"],
+    status:"rejected", notes:"Drop-side cribs are permanently banned by the CPSC — full stop. These cannot be donated, resold, or given away to anyone. Please don't sneak one past us; it's a genuine safety issue that has caused infant deaths.",
+    disposal:"bulk_item" },
+
+  { name:"Pianos & Organs", category:"Furniture",
+    keywords:["piano","organ","upright piano","grand piano","keyboard instrument","player piano"],
+    status:"rejected", notes:"We admire the passion, but pianos and organs are not something we can take. The size, weight, and moving costs make it a logistical nightmare. Perhaps a local music school or church would be thrilled.",
+    disposal:"bulk_item" },
+
+  // ── BEDDING & LINENS ────────────────────────────────────────────────────
+  { name:"Bedding & Comforters", category:"Bedding & Linens",
+    keywords:["sheets","sheet set","comforter","duvet","duvet cover","quilt","blanket","throw blanket","bedspread","coverlet","electric blanket","sleeping bag"],
+    status:"accepted", notes:"Cozy nights ahead for someone! Clean, dry bedding in good condition is accepted and always in high demand.",
+    conditions:[{ok:true,text:"Clean & dry"},{ok:false,text:"Wet, heavily stained, or odorous"}] },
+
+  { name:"Towels & Bath Linens", category:"Bedding & Linens",
+    keywords:["towel","bath towel","hand towel","washcloth","bath mat","bath rug","beach towel"],
+    status:"accepted", notes:"Fresh towels, happy shoppers. Clean towels and bath linens in good condition are accepted — the fluffier the better.",
+    conditions:[{ok:true,text:"Clean & dry"},{ok:false,text:"Heavily worn or mildewed"}] },
+
+  { name:"Curtains & Window Treatments", category:"Bedding & Linens",
+    keywords:["curtain","drape","window panel","valance","sheer curtain","blackout curtain","roman shade"],
+    status:"accepted", notes:"Window shopping just got more literal. Curtains and drapes in clean, good condition are accepted — let's dress some windows." },
+
+  { name:"Tablecloths & Napkins", category:"Bedding & Linens",
+    keywords:["tablecloth","napkin","placemat","table runner","linen napkin"],
+    status:"accepted", notes:"Tablecloths, placemats, and table linens in good condition are accepted. Someone's dinner party is going to look very chic." },
+
+  { name:"Pillows", category:"Bedding & Linens",
+    keywords:["pillow","bed pillow","throw pillow","cushion","pillow insert"],
+    status:"rejected", notes:"We hate to be the bearer of bad news, but bed pillows and mattress toppers are a hygiene no-go for us. Decorative throw pillow covers (without the insert) are fair game though.",
+    disposal:"textile" },
+
+  { name:"Mattress", category:"Bedding & Linens",
+    keywords:["mattress","box spring","bed topper","mattress topper","mattress pad","memory foam mattress"],
+    status:"rejected", notes:"Mattresses and box springs have seen too much to be re-donated — it's nothing personal, just health and hygiene. We'll leave it at that.",
+    disposal:"mattress" },
+
+  // ── ELECTRONICS ─────────────────────────────────────────────────────────
+  { name:"Televisions", category:"Electronics",
+    keywords:["tv","television","flat screen","lcd","led tv","oled","smart tv","monitor tv","plasma tv","hdtv","4k tv"],
+    status:"accepted", electronics:true,
+    notes:"Working TVs are accepted — someone out there is about to upgrade their binge-watching setup. All donated electronics are thoroughly evaluated, data is wiped using certified technology, and anything that can't be sold gets responsibly recycled through E-Cycle Washington. Win-win-win.",
+    conditions:[{ok:true,text:"Powers on & displays picture"},{ok:false,text:"Cracked screen or no power"}] },
+
+  { name:"Computers & Laptops", category:"Electronics",
+    keywords:["computer","laptop","desktop","pc","mac","macbook","chromebook","notebook","all-in-one computer","gaming computer","workstation"],
+    status:"accepted", electronics:true,
+    notes:"Time to let that old laptop find a new purpose! Working computers are accepted. We'll wipe all your data using certified technology — your embarrassing browsing history is safe with us. Devices that can't be sold are recycled through E-Cycle Washington.",
+    conditions:[{ok:true,text:"Powers on (charger not required)"},{ok:false,text:"Severely damaged or non-functional"}] },
+
+  { name:"Tablets & E-Readers", category:"Electronics",
+    keywords:["tablet","ipad","android tablet","kindle","e-reader","surface tablet","fire tablet","nook"],
+    status:"accepted", electronics:true,
+    notes:"Someone's next great read or Netflix binge awaits. Working tablets and e-readers are accepted — we'll handle erasing all your data with certified tech before it hits the shelf.",
+    conditions:[{ok:true,text:"Powers on, screen intact"},{ok:false,text:"Cracked screen or no power"}] },
+
+  { name:"Cell Phones & Smartphones", category:"Electronics",
+    keywords:["phone","cell phone","smartphone","iphone","android","mobile phone","flip phone","samsung","pixel"],
+    status:"accepted", electronics:true,
+    notes:"Out with the old phone, in with the new. Working cell phones are accepted — and yes, we'll wipe all your texts, selfies, and embarrassing memos with certified data-erasure technology.",
+    conditions:[{ok:true,text:"Powers on, screen intact"},{ok:false,text:"Cracked screen or non-functional"}] },
+
+  { name:"Computer Monitors", category:"Electronics",
+    keywords:["monitor","computer monitor","lcd monitor","external monitor","display screen"],
+    status:"accepted", electronics:true,
+    notes:"Working monitors are accepted — someone's home office setup is about to get a glow-up. Anything we can't sell gets responsibly recycled through E-Cycle Washington.",
+    conditions:[{ok:true,text:"Powers on & displays image"},{ok:false,text:"Cracked screen or no power"}] },
+
+  { name:"Printers & Scanners", category:"Electronics",
+    keywords:["printer","scanner","all-in-one printer","inkjet printer","laser printer","fax machine","copier"],
+    status:"accepted", electronics:true,
+    notes:"Working printers and scanners are accepted — ink cartridges are a bonus but not required. The next owner will figure out the ink situation themselves, just like the rest of us.",
+    conditions:[{ok:true,text:"Powers on & functional"},{ok:false,text:"Broken or missing key parts"}] },
+
+  { name:"Cameras & Photography", category:"Electronics",
+    keywords:["camera","digital camera","dslr","mirrorless camera","film camera","point and shoot","camcorder","video camera","gopro","action camera","camera lens","tripod"],
+    status:"accepted", electronics:true,
+    notes:"Say cheese! Cameras and photography equipment in good working condition are accepted. Someone's Instagram is about to get way more interesting." },
+
+  { name:"Audio Equipment", category:"Electronics",
+    keywords:["speaker","bluetooth speaker","stereo","receiver","amplifier","turntable","record player","subwoofer","soundbar","home theater","boombox","radio","cd player","cassette player","cassette deck","tape deck","walkman","portable speaker"],
+    status:"accepted", electronics:true,
+    notes:"Audio equipment in working condition is accepted. Let's get someone's living room sounding like a proper listening lounge.",
+    conditions:[{ok:true,text:"Powers on & produces sound"},{ok:false,text:"Non-functional or missing key parts"}] },
+
+  { name:"Headphones & Earbuds", category:"Electronics",
+    keywords:["headphones","earbuds","earphones","wireless headphones","over-ear headphones","airpods","noise canceling"],
+    status:"accepted", electronics:true,
+    notes:"Headphones and earbuds in good working condition are accepted — someone's commute is about to get a lot better." },
+
+  { name:"Video Game Consoles & Games", category:"Electronics",
+    keywords:["game console","playstation","xbox","nintendo","wii","switch","ps4","ps5","game controller","video game","gaming","atari","sega","gameboy","ds","handheld game"],
+    status:"accepted", electronics:true,
+    notes:"Game on! Working consoles, controllers, and games are accepted. Level up someone's living room.",
+    conditions:[{ok:true,text:"Console powers on"},{ok:false,text:"Non-functional"}] },
+
+  { name:"DVD / Blu-ray Players", category:"Electronics",
+    keywords:["dvd player","blu-ray player","dvd","blu-ray","vhs","vcr","media player","dvd movies","blu-ray movies"],
+    status:"accepted", electronics:true,
+    notes:"DVD and Blu-ray players in working condition are accepted, as are DVDs and Blu-ray discs." },
+
+  { name:"Cables & Accessories", category:"Electronics",
+    keywords:["cable","hdmi cable","usb cable","charger","power cord","surge protector","power strip","extension cord","adapter","keyboard","mouse","webcam","external hard drive","usb drive","flash drive"],
+    status:"accepted",
+    notes:"Cables, chargers, keyboards, and mice in good condition are accepted. The drawer of tangled cords in your junk drawer? Now it can be someone else's tangled cord drawer." },
+
+  { name:"Small Electronics / Gadgets", category:"Electronics",
+    keywords:["alarm clock","clock radio","calculator","voice recorder","walkie talkie","cb radio","ham radio","gps","navigation","electronic gadget","smart home","echo","alexa","google home"],
+    status:"accepted", electronics:true,
+    notes:"Working small electronics and gadgets are accepted. One person's outdated smart speaker is another person's new kitchen companion." },
+
+  { name:"Large Entertainment Center", category:"Electronics",
+    keywords:["entertainment center","entertainment unit","wall unit","large media center","built-in entertainment"],
+    status:"rejected", notes:"Large entertainment centers are a no from us — they're enormous, heavy, and honestly a tough sell in the flat-screen era. We appreciate the thought though.",
+    disposal:"bulk_item" },
+
+  { name:"Batteries", category:"Electronics",
+    keywords:["battery","batteries","lithium battery","car battery","alkaline","rechargeable battery","9v","aa battery","aaa battery","d battery","c battery","button battery","coin battery"],
+    status:"rejected", notes:"Not included, and not accepted either! Batteries of all types are a no-go due to fire and hazardous material risks. Please recycle them properly.",
+    disposal:"battery" },
+
+  { name:"Light Bulbs", category:"Electronics",
+    keywords:["light bulb","bulb","cfl","fluorescent bulb","led bulb","halogen","incandescent bulb","tube light","fluorescent tube"],
+    status:"rejected", notes:"We can't accept light bulbs — especially CFLs, which contain mercury and need special handling. Don't let them end up in the landfill though; there are easy recycling options nearby.",
+    disposal:"lightbulb" },
+
+  // ── SMALL APPLIANCES ───────────────────────────────────────────────────
+  { name:"Kitchen Appliances (Small)", category:"Appliances",
+    keywords:["toaster","toaster oven","blender","mixer","stand mixer","hand mixer","coffee maker","coffee machine","espresso maker","keurig","drip coffee","french press electric","kettle","electric kettle","microwave","waffle maker","panini press","sandwich maker","rice cooker","pressure cooker","instant pot","slow cooker","crock pot","air fryer","deep fryer","food processor","juicer","bread maker","popcorn maker","ice cream maker","fondue set","crepe maker","egg cooker","george foreman"],
+    status:"accepted", notes:"Working small kitchen appliances are always a hit — someone's breakfast routine is about to get an upgrade. Please test before donating; we'd hate for a mystery blender to disappoint someone.",
+    conditions:[{ok:true,text:"Powers on & works correctly"},{ok:false,text:"Broken or missing key parts"}] },
+
+  { name:"Irons & Steamers", category:"Appliances",
+    keywords:["iron","clothes iron","garment steamer","steam iron","ironing board"],
+    status:"accepted", notes:"Wrinkle-free futures ahead. Irons, steamers, and ironing boards in working condition are accepted." },
+
+  { name:"Vacuums & Floor Care", category:"Appliances",
+    keywords:["vacuum","vacuum cleaner","upright vacuum","canister vacuum","robotic vacuum","roomba","carpet sweeper","mop","steam mop","floor cleaner","shop vac"],
+    status:"accepted", notes:"Suck it up and donate it! Working vacuums and floor care equipment are accepted and always in demand.",
+    conditions:[{ok:true,text:"Powers on & suctions"},{ok:false,text:"Missing key attachments or non-functional"}] },
+
+  { name:"Fans & Space Heaters", category:"Appliances",
+    keywords:["fan","box fan","tower fan","desk fan","oscillating fan","ceiling fan","space heater","electric heater","portable heater"],
+    status:"accepted", notes:"Stay cool (or warm) — someone else's comfort is in your hands. Fans and space heaters in safe, working condition are accepted.",
+    conditions:[{ok:true,text:"Powers on & works safely"},{ok:false,text:"Frayed cord or safety hazard"}] },
+
+  { name:"Hair Care Appliances", category:"Appliances",
+    keywords:["hair dryer","blow dryer","hair straightener","flat iron","curling iron","curling wand","hot rollers","hair curler"],
+    status:"accepted", notes:"Good hair days for everyone! Working hair dryers, flat irons, and curling tools are accepted.",
+    conditions:[{ok:true,text:"Powers on & heats correctly"},{ok:false,text:"Frayed cord or damaged heating element"}] },
+
+  { name:"Sewing Machines", category:"Appliances",
+    keywords:["sewing machine","serger","embroidery machine","overlock machine"],
+    status:"accepted", notes:"A working sewing machine is basically a superpower waiting to be passed on. Accepted gladly — accessories and attachments are a bonus!" },
+
+  { name:"Power Tools (Electric)", category:"Appliances",
+    keywords:["drill","electric drill","circular saw","jigsaw","sander","belt sander","orbital sander","router","reciprocating saw","table saw","miter saw","angle grinder","heat gun","electric screwdriver"],
+    status:"accepted", notes:"Working electric tools are accepted — safely, please. Someone's DIY project is about to have the right equipment.",
+    conditions:[{ok:true,text:"Safe & functional"},{ok:false,text:"Damaged cord, missing safety guard"}] },
+
+  { name:"Ladders", category:"Appliances",
+    keywords:["ladder","step ladder","stepladder","extension ladder","folding ladder","a-frame ladder","attic ladder","step stool","step stool ladder","aluminum ladder","fiberglass ladder","wooden ladder","multi position ladder","telescoping ladder","loft ladder"],
+    status:"accepted",
+    notes:"Ladders in safe, sturdy condition are accepted — someone's lightbulb-changing situation is about to get a lot easier. All rungs and locking mechanisms must be intact and functional.",
+    conditions:[
+      {ok:true,  text:"Sturdy, all rungs intact"},
+      {ok:true,  text:"Locking mechanisms work correctly"},
+      {ok:false, text:"Bent, cracked, or missing rungs"},
+      {ok:false, text:"Broken locking or hinge mechanism"}
+    ] },
+
+  { name:"Gas-Powered Tools", category:"Appliances",
+    keywords:["chainsaw","leaf blower","lawn mower","gas mower","weed whacker","string trimmer","gas trimmer","gas power tool","gas blower","pressure washer gas"],
+    status:"rejected", notes:"Gas-powered tools are a no from us. The fuel residue makes them a fire hazard we can't take on — but your local HHW facility can handle the proper disposal.",
+    disposal:"hhw" },
+
+  { name:"BBQ Grill & Smoker", category:"Appliances",
+    keywords:["bbq","barbecue","barbeque","grill","gas grill","charcoal grill","propane grill","outdoor grill","smoker","pellet grill","kettle grill","kamado grill","portable grill","tabletop grill","george foreman outdoor","hibachi","fire pit grill","bbq smoker","offset smoker","weber grill","traeger"],
+    status:"rejected",
+    notes:"BBQ grills and smokers are not accepted — between the grease buildup, fuel residue, and sheer size, they're more than we can take on. Your county transfer station or a private hauler can help, and Facebook Marketplace might find it a new backyard faster than you'd think.",
+    disposal:"bulk_item" },
+
+  { name:"Large Appliances", category:"Appliances",
+    keywords:["refrigerator","fridge","washer","washing machine","dryer","clothes dryer","dishwasher","oven","stove","range","cooktop","freezer","chest freezer","upright freezer","large appliance"],
+    status:"rejected", notes:"As much as we admire the ambition, large appliances aren't something we can take. Refrigerators, washers, dryers, ovens — all too large for our operation. Your county transfer station or a scrap hauler can help.",
+    disposal:"appliance" },
+
+  { name:"Air Conditioner", category:"Appliances",
+    keywords:["air conditioner","ac unit","window ac","portable ac","window air conditioner","mini split"],
+    status:"rejected", notes:"Cool idea, but no thanks. Air conditioners contain refrigerants that require special licensing to handle — so we have to pass. Your county transfer station can point you in the right direction.",
+    disposal:"appliance" },
+
+  // ── KITCHENWARE & DINING ───────────────────────────────────────────────
+  { name:"Dishes & Dinnerware", category:"Kitchen & Dining",
+    keywords:["dishes","plates","bowls","dinnerware","dish set","dinner set","salad plates","side plates","soup bowl","cereal bowl","serving platter","serving bowl","china","fine china","stoneware","porcelain","ceramic dishes"],
+    status:"accepted", notes:"Dishware in good condition is accepted — no chips, cracks, or mystery stains, please. Someone's table is about to look very put-together.",
+    conditions:[{ok:true,text:"No chips, cracks, or major staining"},{ok:false,text:"Chipped or cracked"}] },
+
+  { name:"Cups, Mugs & Glassware", category:"Kitchen & Dining",
+    keywords:["cup","mug","coffee mug","tea cup","glass","drinking glass","wine glass","cocktail glass","tumbler","mason jar","water bottle","travel mug","thermos","champagne flute","beer stein","pint glass"],
+    status:"accepted", notes:"Mugs, glasses, and cups in good condition are accepted. Chips and cracks are a hard no — but someone's morning coffee routine is about to get upgraded." },
+
+  { name:"Cookware", category:"Kitchen & Dining",
+    keywords:["pot","pan","skillet","frying pan","saucepan","stockpot","dutch oven","cast iron","wok","roasting pan","baking dish","casserole dish","cake pan","muffin tin","cookie sheet","baking sheet","springform pan","loaf pan"],
+    status:"accepted", notes:"Pots, pans, and bakeware in good condition are accepted. Non-stick surfaces should be intact — nobody wants a side of peeling coating with their eggs.",
+    conditions:[{ok:true,text:"Good condition, no peeling coating"},{ok:false,text:"Heavily warped or peeling non-stick"}] },
+
+  { name:"Utensils & Cutlery", category:"Kitchen & Dining",
+    keywords:["utensils","silverware","flatware","fork","spoon","knife","spatula","ladle","tongs","whisk","peeler","grater","cutting board","can opener","bottle opener","corkscrew","rolling pin","measuring cups","measuring spoons","mixing bowls","colander","strainer"],
+    status:"accepted", notes:"Kitchen utensils and cutlery in good condition are accepted — yes, even the garlic press you used exactly once. One important ask: if you're donating knives of any kind, please wrap the blades securely in newspaper, cardboard, or a kitchen towel before dropping them off, and give our donation attendant a heads-up. Our team will love you for it — ten fingers are better than nine.",
+    conditions:[
+      {ok:true, text:"All utensils & cutlery in good condition"},
+      {ok:true, text:"Knives: wrap blades & alert the donation attendant"}
+    ] },
+
+  { name:"Kitchen Storage & Gadgets", category:"Kitchen & Dining",
+    keywords:["food storage","tupperware","containers","canister","spice rack","kitchen organizer","kitchen gadget","garlic press","pizza cutter","ice cream scoop","kitchen scale","thermometer","timer","kitchen tools"],
+    status:"accepted", notes:"Kitchen gadgets and storage containers in good condition are accepted. Someone will actually use that avocado slicer — we promise." },
+
+  { name:"Coolers & Ice Chests", category:"Kitchen & Dining",
+    keywords:["cooler","ice chest","ice cooler","drink cooler","food cooler","camping cooler","beach cooler","soft cooler","hard cooler","igloo cooler","yeti cooler","coleman cooler","lunch cooler","portable cooler","beverage cooler","rolling cooler","cooler bag","insulated bag","picnic cooler"],
+    status:"accepted",
+    notes:"Coolers and ice chests in clean, good condition are accepted — someone's tailgate, camping trip, or beach day is about to be very well supplied. Give it a good rinse before dropping it off and we'll take it from there.",
+    conditions:[
+      {ok:true,  text:"Clean & odor-free"},
+      {ok:true,  text:"Lid seals & latches function"},
+      {ok:false, text:"Cracked, broken, or heavily stained"}
+    ] },
+
+  // ── BOOKS, MEDIA & MUSIC ───────────────────────────────────────────────
+  { name:"Books", category:"Books & Media",
+    keywords:["book","novel","fiction","nonfiction","paperback","hardcover","biography","self help","cookbook","children's book","picture book","young adult","thriller","mystery","romance","sci-fi","fantasy","history book","science book","art book","coffee table book"],
+    status:"accepted", notes:"Books are some of our best sellers — someone is always looking for their next great read. Readable condition is all we ask.",
+    conditions:[{ok:true,text:"Readable & complete"},{ok:false,text:"Water damaged, moldy, or missing pages"},{ok:false,text:"Encyclopedias (not accepted)"}] },
+
+  { name:"Encyclopedias", category:"Books & Media",
+    keywords:["encyclopedia","encyclopaedia","britannica","world book","encyclopedia set","reference set"],
+    status:"rejected", notes:"We love the ambition, but encyclopedias just don't fly off our shelves anymore. Between outdated info and Wikipedia, demand is basically zero. Try Freecycle!",
+    disposal:"general_donation" },
+
+  { name:"Textbooks", category:"Books & Media",
+    keywords:["textbook","school book","college textbook","study guide","workbook","educational book"],
+    status:"accepted", notes:"Textbooks in readable condition are accepted — older editions and all. Knowledge doesn't have an expiration date (mostly)." },
+
+  { name:"Music: CDs & Vinyl Records", category:"Books & Media",
+    keywords:["cd","music cd","album","record","vinyl","vinyl record","lp","45 rpm","78 rpm","record album"],
+    status:"accepted", notes:"Vinyl is back, baby — and so are your old CDs. Music in good condition is accepted. Cases are a bonus; the music is the real treasure." },
+
+  { name:"Cassette Tapes & Players", category:"Books & Media",
+    keywords:["cassette","cassette tape","audio cassette","mixtape","mix tape","cassette player","walkman","boombox","cassette deck","tape deck","portable cassette player","cassette recorder","8 track","8-track"],
+    status:"accepted", electronics:true,
+    notes:"Cassette tapes and players are accepted — retro is absolutely on trend and these fly off our shelves. Your old mixtapes and Walkman are someone else's aesthetic now. Players are evaluated for working condition; tapes are accepted as-is.",
+    conditions:[
+      {ok:true, text:"Cassette tapes accepted as-is"},
+      {ok:true, text:"Players should power on & play"}
+    ] },
+
+  { name:"VHS Tapes & VCR Players", category:"Books & Media",
+    keywords:["vhs","vhs tape","vcr","vcr player","video cassette","videocassette","vhs movie","vhs recorder","vhs player","betamax","beta tape","laserdisc","laser disc"],
+    status:"accepted", electronics:true,
+    notes:"VHS tapes and VCR players are accepted — we're not here to judge your tape collection, only to celebrate it. Retro is having a serious moment and these move faster than you'd think. Players should power on; tapes are accepted as-is.",
+    conditions:[
+      {ok:true, text:"VHS tapes accepted as-is"},
+      {ok:true, text:"VCR players should power on & play"}
+    ] },
+
+  { name:"Movies: DVDs & Blu-rays", category:"Books & Media",
+    keywords:["dvd","dvd movie","blu-ray","movie","film","documentary","tv series dvd","boxed set"],
+    status:"accepted", notes:"DVDs and Blu-rays in good condition are accepted. Someone still watches physical media, and honestly we respect it." },
+
+  { name:"Video Games", category:"Books & Media",
+    keywords:["video game","game cartridge","game disc","ps game","xbox game","nintendo game","pc game","switch game"],
+    status:"accepted", notes:"Video games in any format are accepted. Extra lives not included, but the fun is." },
+
+  // ── TOYS & CHILDREN'S ITEMS ────────────────────────────────────────────
+  // ── TOYS ───────────────────────────────────────────────────────────────
+  { name:"Toys & Games", category:"Toys & Children",
+    keywords:["toy","toys","action figure","doll","stuffed animal","plush toy","board game","card game","lego","blocks","building toys","puzzle","jigsaw puzzle","train set","play set","remote control toy","educational toy","art supplies kids","play-doh","clay kids","science kit","craft kit","outdoor toy","bath toy","fidget toy"],
+    status:"accepted",
+    notes:"Toys and games in clean, safe condition are accepted — let's make some kid's day! Our team checks all toys against CPSC safety standards, so please skip anything with unsecured magnets, loose button batteries, obvious choking hazards, or active recalls. Safety first, fun second.",
+    conditions:[
+      {ok:true,  text:"Clean & essentially complete"},
+      {ok:true,  text:"Magnets fully secured / enclosed"},
+      {ok:true,  text:"No loose button batteries accessible to children"},
+      {ok:false, text:"Unsecured high-powered magnets (ingestion risk)"},
+      {ok:false, text:"Loose button batteries accessible to young children"},
+      {ok:false, text:"Items on active CPSC recall — check cpsc.gov/recalls"}
+    ] },
+
+  { name:"Magnetic Toys", category:"Toys & Children",
+    keywords:["magnetic toy","magnet toy","magnetic tiles","magnetic building set","magnetic blocks","magnetic balls","magnet set","magnet kit","high powered magnets","rare earth magnets"],
+    status:"accepted",
+    notes:"Magnetic toys are welcome if the magnets are safely enclosed. Loose high-powered magnets are a hard no — they can attract through intestinal walls if swallowed, which is as bad as it sounds. Our team checks every item, but please do your part and verify yours isn't on a CPSC recall before donating.",
+    conditions:[
+      {ok:true,  text:"Magnets fully enclosed & inaccessible to children"},
+      {ok:false, text:"Loose high-powered or rare earth magnets"},
+      {ok:false, text:"Magnetic ball sets with small loose balls (e.g. 3mm)"},
+      {ok:false, text:"Items on active CPSC recall"}
+    ] },
+
+  { name:"Children's Books & Media", category:"Toys & Children",
+    keywords:["children's book","kids book","picture book","early reader","chapter book","kids dvd","children's movie","kids game","learning game"],
+    status:"accepted", notes:"Children's books and media in good condition are accepted. Little readers everywhere will thank you." },
+
+  // ── BABY GEAR ──────────────────────────────────────────────────────────
+  { name:"Baby & Kids Clothing", category:"Toys & Children",
+    keywords:["baby clothes","infant clothes","toddler clothes","kids clothes","children's clothes","onesie","baby onesie","romper baby","baby sleepwear","kids pajamas","children's pajamas","baby shoes","kids shoes","baby outfit","newborn clothes","kids shirt","kids pants","baby socks","kids jacket"],
+    status:"accepted",
+    notes:"All clean baby and kids clothing is accepted — no specific exclusions! If sleepwear has drawstrings that don't meet flammability standards, our team will snip those out and still put it on the floor. New-in-package is always the crowd favorite for infant items.",
+    conditions:[
+      {ok:true, text:"Clean & wearable"},
+      {ok:true, text:"New in package — preferred for infant items"},
+      {ok:false,text:"Wet, moldy, or heavily stained"}
+    ] },
+
+  { name:"Diapers & Baby Personal Care", category:"Toys & Children",
+    keywords:["diapers","diaper","baby wipes","wipes","baby lotion","baby shampoo","baby wash","baby powder","baby formula","nursing pads","baby personal care","pull ups","training pants","baby toiletries"],
+    status:"accepted",
+    notes:"Diapers, wipes, and baby personal care products are accepted — and they sell fast! New, unopened packages are strongly preferred. Opened packages? That's a judgment call for our team.",
+    conditions:[
+      {ok:true, text:"New / sealed — strongly preferred"},
+      {ok:false,text:"Opened packages may be declined"}
+    ] },
+
+  { name:"Baby Bottles & Feeding", category:"Toys & Children",
+    keywords:["baby bottle","bottle nipple","sippy cup","pacifier","breast pump","nursing pillow","bottle warmer","baby food maker","baby feeding","high chair","highchair","booster seat feeding","toddler plate","baby utensils","feeding set"],
+    status:"accepted",
+    notes:"Baby bottles, sippy cups, pacifiers, and feeding accessories are accepted — new or like-new is preferred for the stuff that goes in tiny mouths. High chairs are welcome too, as long as they're in excellent condition and not on a CPSC recall list.",
+    conditions:[
+      {ok:true, text:"Clean & complete"},
+      {ok:true, text:"New / sealed for bottles & pacifiers — preferred"},
+      {ok:false,text:"High chairs on active CPSC recall"}
+    ] },
+
+  { name:"High Chair", category:"Toys & Children",
+    keywords:["high chair","highchair","feeding chair","baby feeding seat","booster high chair"],
+    status:"accepted",
+    notes:"High chairs in excellent condition are accepted — all straps, hardware, and tray pieces must be present and working. Before you bring it in, do a quick check at cpsc.gov/recalls to make sure it's not on the recall list. A few seconds of research can make a big difference.",
+    conditions:[
+      {ok:true, text:"Excellent condition — all straps & hardware present"},
+      {ok:false,text:"Missing straps, broken tray, or structural damage"},
+      {ok:false,text:"Models on active CPSC recall"}
+    ] },
+
+  { name:"Baby Bouncer & Rocker", category:"Toys & Children",
+    keywords:["baby bouncer","baby rocker","infant seat","bouncy seat","baby swing","infant rocker","baby recliner","vibrating baby seat","baby lounger"],
+    status:"accepted",
+    notes:"Baby bouncers and rockers in excellent condition are welcome! Just make sure it's not on a CPSC recall and not marketed for infant sleep with an incline over 10 degrees — those are federally banned. A quick cpsc.gov/recalls check before donating goes a long way.",
+    conditions:[
+      {ok:true,  text:"Excellent condition — all parts present"},
+      {ok:true,  text:"Intended for supervised awake time only"},
+      {ok:false, text:"Marketed for sleep with >10° incline (banned by CPSC)"},
+      {ok:false, text:"Models on active CPSC recall"}
+    ] },
+
+  { name:"Inclined Sleeper / Sleep Positioner", category:"Toys & Children",
+    keywords:["inclined sleeper","sleep positioner","baby sleep wedge","infant sleep positioner","rock n play","rocknplay","napper","co-sleeper","in-bed sleeper","bedside sleeper","baby hammock","bassinet inclined","sleep aid baby"],
+    status:"rejected",
+    notes:"These are federally banned — not just a Goodwill policy. Inclined sleepers, co-sleepers, and sleep positioners with angles over 10 degrees were banned under the Safe Sleep for Babies Act after being linked to over 100 infant deaths. This includes the Fisher-Price Rock 'n Play. Please don't donate these anywhere — check cpsc.gov/recalls for your specific product and remedy options.",
+    disposal:"cpsc_recall" },
+
+  { name:"Pack 'n Play / Play Yard", category:"Toys & Children",
+    keywords:["pack n play","pack and play","play yard","travel crib","portable crib","playpen","graco pack n play","baby play yard"],
+    status:"accepted",
+    notes:"Pack 'n Plays in excellent condition are accepted — mesh intact, mattress pad included, no bent frames or broken parts. Before donating, give your specific model a quick lookup at cpsc.gov/recalls. Some models and their mattresses have been recalled, so it's worth the 30-second check.",
+    conditions:[
+      {ok:true,  text:"Excellent condition — all parts present"},
+      {ok:true,  text:"Original mattress pad included"},
+      {ok:false, text:"Torn mesh, bent frame, or missing parts"},
+      {ok:false, text:"Models on active CPSC recall — verify at cpsc.gov/recalls"}
+    ] },
+
+  { name:"Baby Gate", category:"Toys & Children",
+    keywords:["baby gate","safety gate","child gate","stair gate","pet gate","pressure gate","hardware gate","walk-through gate","retractable gate"],
+    status:"accepted",
+    notes:"Baby gates in excellent working condition are accepted — all hardware and latches must be present and actually work. Some models have been recalled for entrapment hazards, so a quick check at cpsc.gov/recalls before donating is a very good idea.",
+    conditions:[
+      {ok:true,  text:"All hardware & locking mechanism intact"},
+      {ok:false, text:"Missing mounting hardware or non-functional latch"},
+      {ok:false, text:"Models on active CPSC recall"}
+    ] },
+
+  { name:"Baby Monitor", category:"Toys & Children",
+    keywords:["baby monitor","video monitor","audio monitor","baby camera","smart monitor"],
+    status:"accepted", notes:"Working baby monitors are accepted. Bring the power cord or a charged battery — we need to know it works before it goes on the shelf." },
+
+  { name:"Baby Play Mat & Gym", category:"Toys & Children",
+    keywords:["play mat","baby gym","activity mat","tummy time mat","playmat","baby activity center","baby play gym","floor mat baby","activity gym"],
+    status:"accepted",
+    notes:"Baby play mats and activity gyms in clean, good condition are accepted — tummy time heroes, welcome! Just note that anything marketed as an infant sleep surface will get a closer look from our team and may be declined.",
+    conditions:[
+      {ok:true,  text:"Clean & complete"},
+      {ok:false, text:"Not designed or marketed for infant sleep"}
+    ] },
+
+  { name:"Stroller", category:"Toys & Children",
+    keywords:["stroller","pram","baby carriage","jogging stroller","double stroller","umbrella stroller","travel system","buggy","pushchair"],
+    status:"accepted",
+    notes:"Strollers in excellent working condition are accepted — wheels roll, harnesses click, and the fold mechanism folds. Please verify your model at cpsc.gov/recalls before bringing it in. Baby's next adventure awaits.",
+    conditions:[
+      {ok:true,  text:"All harnesses, wheels & folding mechanism work"},
+      {ok:false, text:"Broken harness, bent frame, or non-functional"},
+      {ok:false, text:"Models on active CPSC recall"}
+    ] },
+
+  { name:"Infant Car Seat", category:"Toys & Children",
+    keywords:["car seat","infant car seat","child car seat","booster seat","baby seat","convertible car seat","car seat base"],
+    status:"rejected",
+    notes:"Car seats are a no — and it's purely for safety. There's no way to verify a crash history or confirm it meets current standards. The good news: manufacturers offer mail-back programs and Target periodically hosts trade-in events where any brand can be recycled for store credit.",
+    disposal:"car_seat" },
+
+  { name:"Playground Equipment & Trampolines", category:"Toys & Children",
+    keywords:["playground","swing set","jungle gym","slide","play structure","climber","outdoor play structure","playset outdoor","playset","kids playset","backyard playset","wooden playset","metal playset","trampoline","bounce house","bouncy castle","inflatable bouncer","outdoor climber","monkey bars","fort","kids fort","tree house","sandbox","water table","kids slide","outdoor slide","spring rider","seesaw","teeter totter"],
+    status:"rejected",
+    notes:"We love the outdoor adventure spirit, but playsets, playground equipment, and trampolines are too large for us to accept. Your neighborhood Buy Nothing group, a local school, or a community center might be absolutely thrilled to take them off your hands.",
+    disposal:"bulk_item" },
+
+
+
+  // ── DÉCOR & HOME ──────────────────────────────────────────────────────
+  { name:"Home Décor", category:"Décor & Art",
+    keywords:["decor","decoration","vase","candle","candle holder","picture frame","photo frame","figurine","statue","sculpture","decorative bowl","tray","basket","wreath","wall decor","wall art","tapestry","clock","wall clock","mantle decor","shelf decor","home accent","knick knack","trinket"],
+    status:"accepted", notes:"Home décor and accents in good condition are accepted — vases, candles, figurines, clocks, and all the little things that make a house feel like home. Someone is going to style a whole shelf around that thing you forgot you owned." },
+
+  { name:"Artwork & Prints", category:"Décor & Art",
+    keywords:["art","artwork","painting","print","framed art","poster","photograph","lithograph","canvas","watercolor","oil painting","acrylic painting","art print","wall hanging"],
+    status:"accepted", notes:"Artwork and framed prints in good condition are accepted. One person's gallery wall refresh is another person's statement piece." },
+
+  { name:"Holiday Decorations", category:"Décor & Art",
+    keywords:["holiday decor","christmas decor","halloween decor","easter decor","thanksgiving decor","ornament","christmas tree","holiday lights","christmas lights","wreath holiday","nativity","menorah","seasonal decor"],
+    status:"accepted", notes:"Holiday decorations in good condition are accepted — whether it's Christmas, Halloween, or that one inflatable turkey you've been meaning to get rid of. Seasonal joy is always in style." },
+
+  { name:"Flags", category:"Décor & Art",
+    keywords:["flag","flags","american flag","us flag","usa flag","united states flag","state flag","country flag","decorative flag","garden flag","sports flag","team flag","military flag","pride flag","international flag","banner","pennant"],
+    status:"accepted",
+    notes:"Flags of all kinds are accepted and always find a new home. Got an American flag to donate? Our team is specially trained and has partnerships in place to ensure it receives an honorable retirement — because some flags deserve a proper send-off, not just a donation bin.",
+    conditions:[
+      {ok:true, text:"All flags in any condition accepted"},
+      {ok:true, text:"American flags — honorably retired through our team's partnerships"}
+    ] },
+
+
+
+  { name:"Rugs & Area Rugs", category:"Décor & Art",
+    keywords:["rug","area rug","throw rug","accent rug","runner rug","oriental rug","persian rug","doormat"],
+    status:"accepted", notes:"Clean area rugs in good condition are accepted and sell surprisingly well. Just note: wall-to-wall carpet and padding are not something we can take — that's a whole different logistical situation.",
+    conditions:[{ok:true,text:"Clean area rugs"},{ok:false,text:"Wall-to-wall carpet or carpet padding"}] },
+
+  { name:"Wall-to-Wall Carpet", category:"Décor & Art",
+    keywords:["carpet","wall to wall carpet","carpeting","carpet padding","carpet roll","broadloom"],
+    status:"rejected", notes:"Wall-to-wall carpeting and padding are not accepted — we're a thrift store, not a flooring contractor. Your county transfer station can handle those.",
+    disposal:"bulk_item" },
+
+  { name:"Plants & Planters", category:"Décor & Art",
+    keywords:["planter","flower pot","pot","plant pot","decorative planter","indoor planter","garden pot"],
+    status:"accepted", notes:"Planters and decorative pots in good condition are accepted — the greenery, however, stays with you. Live plants are not accepted, but we're sure yours will thrive." },
+
+  { name:"Blinds", category:"Décor & Art",
+    keywords:["blinds","venetian blinds","mini blinds","window blinds","roller shade","cellular shade"],
+    status:"rejected", notes:"Window blinds are not something we can accept — the measuring, fitting, and resale complexity just doesn't work for us. Try Freecycle or your Buy Nothing group!",
+    disposal:"general_donation" },
+
+  // ── SPORTING GOODS & OUTDOOR ──────────────────────────────────────────
+  { name:"Sporting Goods", category:"Sports & Outdoors",
+    keywords:["sports equipment","weights","dumbbell","kettlebell","jump rope","yoga mat","resistance band","foam roller","boxing gloves","helmet","bicycle","bike","scooter","skateboard","rollerblades","ice skates","ski","snowboard","golf clubs","tennis racket","badminton","ping pong","basketball","football","soccer ball","baseball","softball","glove mitt","bat","fishing pole","fishing rod","fishing gear","fishing reel","fishing lure","fishing tackle","tackle box","fly fishing","kayak paddle","life jacket","camping gear","tent","sleeping bag","backpack hiking","hydration pack","surfboard","longboard surfboard","shortboard","bodyboard","boogie board","paddleboard","sup board","stand up paddleboard","wakeboard","skimboard","kiteboard","surfing gear","wetsuit","surf leash","surf fins"],
+    status:"accepted", notes:"Sporting goods and outdoor equipment in safe, good condition are accepted. Whether it's golf clubs or a yoga mat, someone out there is ready to use it.",
+    conditions:[{ok:true,text:"Safe & functional"},{ok:false,text:"Damaged helmets or safety-critical broken gear"}] },
+
+  { name:"Large Fitness Equipment", category:"Sports & Outdoors",
+    keywords:["treadmill","elliptical","exercise bike","stationary bike","weight bench","weight rack","rowing machine","stair climber","multi-gym","home gym","cable machine"],
+    status:"rejected", notes:"We admire the commitment to that treadmill purchase — truly. But large fitness equipment is not something we can take. Try Facebook Marketplace or a local gym that accepts equipment donations.",
+    disposal:"bulk_item" },
+
+  { name:"Bicycles", category:"Sports & Outdoors",
+    keywords:["bicycle","bike","mountain bike","road bike","kids bike","children's bike","bmx","cruiser bike","tricycle"],
+    status:"accepted", notes:"Bikes in rideable or repairable condition are accepted. Someone's next adventure is just a tune-up away.",
+    conditions:[{ok:true,text:"Rideable or repairable"},{ok:false,text:"Badly bent frame or completely non-functional"}] },
+
+  // ── MUSICAL INSTRUMENTS ────────────────────────────────────────────────
+  { name:"Musical Instruments", category:"Music",
+    keywords:["guitar","acoustic guitar","electric guitar","bass guitar","ukulele","mandolin","banjo","violin","cello","viola","bass","double bass","drum","drum kit","snare","keyboard","digital piano","electronic keyboard","flute","clarinet","trumpet","trombone","saxophone","harmonica","accordion","instrument"],
+    status:"accepted", notes:"Musical instruments in playable or repairable condition are accepted. That guitar collecting dust in the corner? It deserves an audience.",
+    conditions:[{ok:true,text:"Playable or repairable"},{ok:false,text:"Severely damaged beyond repair"}] },
+
+  { name:"Pianos & Organs", category:"Music",
+    keywords:["piano","organ","upright piano","grand piano","baby grand","spinet","console piano","pipe organ","electronic organ","hammond organ"],
+    status:"rejected", notes:"Pianos and organs are not accepted — moving them is basically a full production, and the logistics just don't work for us. Try a local music school, church, or community center; they might be overjoyed.",
+    disposal:"bulk_item" },
+
+  // ── OFFICE & SCHOOL SUPPLIES ───────────────────────────────────────────
+  { name:"Office Supplies & Stationery", category:"Office & School",
+    keywords:["office supplies","stationery","pens","pencils","notebooks","binders","folders","stapler","scissors","tape","markers","highlighters","paper","printer paper","envelopes","calculator","filing supplies","organizer","desk accessories","bulletin board","whiteboard"],
+    status:"accepted", notes:"Office supplies and stationery in usable condition are accepted. Your surplus sticky notes and extra binders will find their calling." },
+
+  { name:"Arts & Crafts Supplies", category:"Office & School",
+    keywords:["art supplies","craft supplies","paint brushes","acrylic paint","watercolor paint","colored pencils","crayons","markers","craft paper","scrapbooking","knitting","yarn","crochet","sewing supplies","fabric","thread","cross stitch","embroidery","beads","jewelry making","glue gun","hot glue"],
+    status:"accepted", notes:"Arts and crafts supplies in usable condition are accepted. The next great artist is out there waiting for your half-used sketchbook and mystery yarn." },
+
+  // ── HEALTH & FITNESS (NON-HAZARDOUS) ───────────────────────────────────
+  { name:"Exercise Equipment (Small)", category:"Sports & Outdoors",
+    keywords:["hand weights","dumbbell set","resistance bands","yoga mat","exercise mat","jump rope","pull up bar","foam roller","balance board","stability ball","fitness accessories"],
+    status:"accepted", notes:"Small exercise equipment and fitness accessories in good condition are accepted." },
+
+  // ── HAZARDOUS & NOT ACCEPTED ──────────────────────────────────────────
+  { name:"Aerosols & Personal Care Products", category:"Chemicals & Hazardous",
+    keywords:["aerosol","hair spray","hairspray","body spray","deodorant spray","dry shampoo","shaving cream","spray can","personal care spray","health product spray"],
+    status:"rejected", notes:"No cans or tubes of personal care products — hair, body, skin, or hygiene — are accepted. Gotta keep our team and shoppers safe from any mystery liquids.",
+    disposal:"hhw" },
+
+  { name:"Household Cleaners", category:"Chemicals & Hazardous",
+    keywords:["cleaner","cleaning product","bleach","disinfectant","oven cleaner","drain cleaner","bathroom cleaner","floor cleaner","all purpose cleaner","409","windex","lysol","scrubbing bubbles","comet","ajax","pine sol"],
+    status:"rejected", notes:"Household cleaners and chemicals are not accepted. We appreciate the clean energy, but these belong at your local HHW facility, not our donation bins.",
+    disposal:"hhw" },
+
+  { name:"Pesticides & Weed Killers", category:"Chemicals & Hazardous",
+    keywords:["pesticide","insecticide","bug spray","ant killer","rodent poison","rat poison","mouse poison","weed killer","herbicide","roundup","grass killer","raid","wasp spray","termite killer"],
+    status:"rejected", notes:"Pesticides and poisons are a definite no. Whether it's ant killer or weed spray, your local HHW facility is the safe and responsible option.",
+    disposal:"hhw" },
+
+  { name:"Fertilizers", category:"Chemicals & Hazardous",
+    keywords:["fertilizer","plant food","lawn fertilizer","garden fertilizer","miracle gro","plant fertilizer"],
+    status:"rejected", notes:"Fertilizers are not accepted — even the garden can't save us on this one. HHW facilities handle these properly.",
+    disposal:"hhw" },
+
+  { name:"Paint", category:"Chemicals & Hazardous",
+    keywords:["paint","latex paint","oil paint","spray paint","chalk paint","chalkboard paint","wood stain","polyurethane","primer","stain","varnish","sealant paint"],
+    status:"rejected", notes:"Paint in any form — oil, latex, chalk, stain, polyurethane — is not accepted. Even if it's barely used and a great color. Your local HHW drop-off will take it.",
+    disposal:"hhw" },
+
+  { name:"Solvents & Auto Fluids", category:"Chemicals & Hazardous",
+    keywords:["solvent","turpentine","acetone","paint thinner","mineral spirits","automotive fluid","car fluid","transmission fluid","coolant","antifreeze","motor oil","brake fluid","power steering fluid"],
+    status:"rejected", notes:"Solvents, motor oil, antifreeze, and all automotive fluids are not accepted. These need proper hazardous waste handling — your local HHW facility has you covered.",
+    disposal:"hhw" },
+
+  { name:"Gasoline & Fuels", category:"Chemicals & Hazardous",
+    keywords:["gas","gasoline","kerosene","diesel","fuel","petrol","lighter fluid"],
+    status:"rejected", notes:"No gas, no kerosene, no diesel. We run on community spirit and good intentions here — not combustible liquids. Please take fuels to an HHW facility.",
+    disposal:"hhw" },
+
+  { name:"Propane Tanks", category:"Chemicals & Hazardous",
+    keywords:["propane","propane tank","gas cylinder","bbq tank","grill tank","camping propane"],
+    status:"rejected", notes:"Propane tanks are not accepted — for obvious reasons. The good news: most hardware stores and propane retailers offer easy exchange programs. Blue Rhino and AmeriGas are good starting points.",
+    disposal:"propane" },
+
+  { name:"Sterno / Canned Heat", category:"Chemicals & Hazardous",
+    keywords:["sterno","canned heat","chafing fuel","gel fuel"],
+    status:"rejected", notes:"Sterno and canned heat are not accepted. We appreciate the fondue enthusiasm, but flammable gels belong at an HHW facility.",
+    disposal:"hhw" },
+
+  { name:"Firearms & Ammunition", category:"Weapons",
+    keywords:["gun","firearm","rifle","pistol","revolver","shotgun","ammunition","ammo","bullets","bb gun","pellet gun","weapon","airsoft","nerf gun realistic"],
+    status:"rejected", notes:"Firearms and ammunition are not accepted — no exceptions. Please contact local law enforcement for a safe surrender program. This is one we take very seriously.",
+    disposal:"firearms" },
+
+  { name:"Combat & Tactical Knives", category:"Weapons",
+    keywords:["combat knife","tactical knife","hunting knife","bowie knife","dagger","switchblade","stiletto knife","throwing knife","dirk","bayonet","blade weapon","fixed blade knife","survival knife","military knife","boot knife","neck knife","assisted opening knife"],
+    status:"rejected",
+    notes:"Combat, tactical, hunting, and weapons-grade knives are not accepted. If you're donating kitchen knives, those are welcome — just search 'kitchen knife' or 'cutlery' for the full details on how to safely drop those off.",
+    disposal:"general_donation" },
+
+  { name:"Martial Arts Weapons", category:"Weapons",
+    keywords:["nunchucks","nunchaku","bo staff","staff","escrima","kali sticks","tonfa","sai","kama","shuriken","throwing star","brass knuckles","knuckle duster","blackjack","baton","nightstick","truncheon","mace weapon","flail","morning star","kusarigama","chain weapon","whip weapon","martial arts weapon","fighting weapon","combat weapon"],
+    status:"rejected",
+    notes:"Nunchucks, bo staffs, sai, tonfa, throwing stars, and other martial arts or combat weapons are not accepted. We respect the discipline — we just can\'t put these on our shelves. Please contact a local martial arts school or sports equipment reseller.",
+    disposal:"general_donation" },
+
+  { name:"Swords & Large Bladed Weapons", category:"Weapons",
+    keywords:["sword","katana","samurai sword","machete","sabre","scimitar","rapier","foil","cutlass","wakizashi","tanto","longsword","broadsword","claymore","falchion","medieval sword","decorative sword","display sword","wall sword","fantasy sword"],
+    status:"rejected",
+    notes:"Swords, katanas, machetes, and large bladed weapons — decorative or otherwise — are not accepted. We\'re a thrift store, not an armory. A local collector, martial arts school, or specialty reseller would be a much better fit.",
+    disposal:"general_donation" },
+
+
+
+  { name:"Fireworks & Explosives", category:"Safety & Hazardous",
+    keywords:["firework","firecrackers","sparklers","roman candle","explosive","m-80"],
+    status:"rejected", notes:"Fireworks and explosives are not accepted. We like a good celebration as much as anyone, but not in our donation bins.",
+    disposal:"hhw" },
+
+  { name:"Matches & Lighters", category:"Safety & Hazardous",
+    keywords:["matches","lighter","matchbook","butane lighter","zippo"],
+    status:"rejected", notes:"Matches and lighters are not accepted. Even the novelty ones shaped like flamingos. HHW facilities can handle these safely.",
+    disposal:"hhw" },
+
+  { name:"Road Flares", category:"Safety & Hazardous",
+    keywords:["road flare","flare","emergency flare","signal flare"],
+    status:"rejected", notes:"Road flares are not accepted. We appreciate the emergency preparedness spirit, but these are a fire hazard we can't take on.",
+    disposal:"hhw" },
+
+  { name:"Smoke Detectors", category:"Safety & Hazardous",
+    keywords:["smoke detector","smoke alarm","carbon monoxide detector","co detector","fire alarm"],
+    status:"rejected", notes:"Smoke detectors contain small amounts of radioactive material — which sounds alarming, but it's totally normal for how they work. Just not something we can accept. Manufacturer mail-back programs and HHW facilities handle these safely.",
+    disposal:"smoke_detector" },
+
+  { name:"Mercury-Containing Items", category:"Safety & Hazardous",
+    keywords:["mercury","mercury thermostat","mercury thermometer","fluorescent tube","mercury switch"],
+    status:"rejected", notes:"Mercury-containing items — thermostats, old thermometers, fluorescent tubes — are not accepted. Mercury is no joke; please take these to an HHW facility where they can be handled properly.",
+    disposal:"hhw" },
+
+  { name:"Medications", category:"Safety & Hazardous",
+    keywords:["medication","medicine","prescription","drugs","pills","vitamins","supplements","otc","rx","over the counter","aspirin","ibuprofen","tylenol","allergy medicine"],
+    status:"rejected", notes:"Medications, prescriptions, and supplements are not accepted — for everyone's safety. Please use a proper medication take-back program; most pharmacies and police stations have drop boxes.",
+    disposal:"medication" },
+
+  { name:"Medical Waste & Biohazards", category:"Safety & Hazardous",
+    keywords:["medical waste","biohazard","needle","syringe","sharps","used medical supply","hospital supply"],
+    status:"rejected", notes:"Medical waste and biohazard materials are not accepted. This one really shouldn't need explaining, but here we are. Please contact your county health department for proper disposal.",
+    disposal:"medical" },
+
+  // ── MISC NOT ACCEPTED ─────────────────────────────────────────────────
+  { name:"Mattresses & Box Springs", category:"Bedding & Linens",
+    keywords:["mattress","box spring"],
+    status:"rejected", notes:"Mattresses and box springs have seen too much to be re-donated. Health and hygiene reasons make these a firm no — but mattress recycling programs exist for exactly this situation.",
+    disposal:"mattress" },
+
+  { name:"Tires", category:"Auto & Building",
+    keywords:["tire","tyre","car tire","truck tire","bicycle tire"],
+    status:"rejected", notes:"Tires are not accepted — we're a thrift store, not a pit crew. Many tire retailers will recycle your old ones when you buy new. Easy!",
+    disposal:"tire" },
+
+  { name:"Bathroom Fixtures", category:"Auto & Building",
+    keywords:["toilet","sink","bathtub","shower","faucet","bathroom fixture","vanity","tub"],
+    status:"rejected", notes:"Toilets, sinks, and tubs are not accepted. We love a home renovation project in theory, but these are a bit outside our lane.",
+    disposal:"bulk_item" },
+
+  { name:"Building Materials", category:"Auto & Building",
+    keywords:["lumber","wood","drywall","concrete","brick","tile","flooring","insulation","building material","construction material","pipe","plumbing","electrical wire"],
+    status:"rejected", notes:"Building materials — lumber, drywall, tile, pipe — are not accepted. We'd need a whole different store for that. Your county transfer station or a Habitat for Humanity ReStore might be a great fit.",
+    disposal:"bulk_item" },
+
+  { name:"Bowling Balls", category:"Miscellaneous",
+    keywords:["bowling ball","bowling"],
+    status:"rejected", notes:"Bowling balls are not accepted. We've thought about it, and there's just no great place for them in our stores. Try a local bowling alley — they sometimes take donations.",
+    disposal:"general_donation" },
+
+  { name:"Food & Beverages", category:"Miscellaneous",
+    keywords:["food","beverage","drink","canned food","grocery","snack","perishable","non-perishable food","alcohol","beer","wine","spirits","liquor","whiskey","vodka","rum","tequila","gin","champagne","cider","hard seltzer","sake","mead","booze","alcoholic beverage","bottle of wine","six pack"],
+    status:"rejected", notes:"Food and beverages — including alcohol, sorry — are not accepted here. But please don't let those non-perishables go to waste! A local food bank would be very grateful.",
+    disposal:"food" },
+
+  { name:"Adult Novelty Items", category:"Miscellaneous",
+    keywords:["sex toy","adult toy","vibrator","dildo","adult novelty","intimate toy","adult product","adult accessory","pleasure device","lingerie","adult game","adult costume","bondage","fetish","erotic","adult item","adult device"],
+    status:"rejected",
+    notes:"We appreciate the generosity, but adult novelty items are not something we're able to put on our shelves — no matter how gently used. These items cannot be accepted for health, safety, and the general comfort of our staff and shoppers.",
+    disposal:"general_donation" },
+
+  { name:"Urns & Cremated Remains", category:"Miscellaneous",
+    keywords:["urn","ashes","cremated remains","cremation","cremains","memorial urn","funeral urn","pet ashes","pet urn","human ashes","remains","loved one","memorial","keepsake urn","biodegradable urn","scatter urn"],
+    status:"rejected",
+    notes:"We are deeply honored by the thought, but urns and cremated remains — human or pet — are not something we're able to accept. Your loved one deserves a more dignified final destination than our housewares aisle. Please contact a funeral home, cremation service, or memorial garden for guidance on a meaningful resting place.",
+    disposal:"general_donation" },
+
+  { name:"Bones & Animal/Human Remains", category:"Miscellaneous",
+    keywords:["bone","bones","skull","skeleton","animal skull","animal bones","human bones","human remains","animal remains","taxidermy","mounted animal","stuffed animal taxidermy","deer head","mounted deer","mounted fish","hunting trophy","trophy mount","antler mount","hide","animal hide","pelt","fur pelt","animal pelt","teeth","claws","feathers trophy","animal parts"],
+    status:"rejected",
+    notes:"Bones, skeletal remains, taxidermy, trophy mounts, pelts, and any other human or animal remains are not accepted — regardless of how artfully displayed. We appreciate that someone thought of us, but this is a hard no from our staff, our shoppers, and frankly our collective peace of mind. Local antique dealers, hunting supply shops, or natural history collectors may be better suited for these items.",
+    disposal:"general_donation" },
+
+
+
+
+  { name:"Yard Debris", category:"Miscellaneous",
+    keywords:["yard debris","leaves","branches","yard waste","garden waste","mulch"],
+    status:"rejected", notes:"Yard debris and yard waste are not accepted. We're not sure what inspired the thought, but we appreciate the creative spirit. Your county compost or transfer station is the right call.",
+    disposal:"yard_waste" },
+
+  // ── PERSONAL CARE & HYGIENE ───────────────────────────────────────────
+  { name:"Personal Care Products", category:"Personal Care",
+    keywords:["personal care","hygiene","shampoo","conditioner","body wash","soap","lotion","moisturizer","sunscreen","deodorant stick","toothpaste","toothbrush","floss","mouthwash","razor","shaving gel","shaving cream tube","feminine hygiene","tampons","pads","makeup","cosmetics","lipstick","foundation","mascara","eyeshadow","blush","nail polish","perfume","cologne","skincare","face wash","toner","serum","eye cream","chapstick","lip balm","hair care","hair product","hair mask","hair treatment","hair oil","body scrub","bath salts","bath bomb","loofah","sponge","cotton swabs","cotton balls"],
+    status:"accepted",
+    notes:"Personal care and hygiene products are accepted if they are new and unopened in their original packaging. This includes skincare, hair care, body care, makeup, and health and hygiene items. Opened or used products cannot be accepted for health and hygiene reasons. Note: aerosol spray cans are never accepted, even if unopened.",
+    conditions:[
+      {ok:true,  text:"New & unopened in original packaging"},
+      {ok:false, text:"Opened or used items"},
+      {ok:false, text:"Aerosol spray cans — never accepted, even if unopened"}
+    ] },
+
+  { name:"Aerosol Spray Products", category:"Personal Care",
+    keywords:["aerosol","spray can","hair spray","hairspray","dry shampoo","body spray","spray deodorant","aerosol deodorant","spray sunscreen","aerosol sunscreen","spray tan","spray lotion","spray foam","mousse","shaving foam","aerosol can","spray bottle pressurized"],
+    status:"rejected",
+    notes:"Aerosol cans and pressurized spray products are not accepted — this includes hair spray, dry shampoo, body spray, spray deodorant, and spray sunscreen. Aerosols are not accepted regardless of whether they are opened or unopened.",
+    disposal:"hhw" },
+
+
+  { name:"Live Animals & Pets", category:"Animals & Pets",
+    keywords:["animal","pet","dog","cat","bird","rabbit","hamster","guinea pig","fish","reptile","lizard","snake","turtle","ferret","gerbil","mouse","rat","livestock","farm animal","horse","chicken","goat","pig","live animal","exotic animal"],
+    status:"rejected",
+    notes:"Live animals are not accepted as donations. If you need to rehome a pet or surrender an animal, please contact your local humane society or animal shelter. They can help find a safe home or placement for your pet.",
+    disposal:"animal_shelter" },
+
+  { name:"Pet Supplies & Accessories", category:"Animals & Pets",
+    keywords:["pet supplies","dog food","cat food","pet food","leash","collar","dog collar","cat collar","pet bed","dog bed","cat bed","pet toy","dog toy","cat toy","pet carrier","cat carrier","dog crate","crate","kennel","aquarium","fish tank","pet bowl","food bowl","water bowl","litter box","cat litter","bird cage","birdcage","pet clothing","dog clothes","cat harness","pet harness","pet brush","grooming supplies","pet accessories"],
+    status:"accepted",
+    notes:"Clean, gently used pet supplies and accessories in good condition are accepted — leashes, collars, carriers, beds, toys, bowls, and more. Unopened pet food may also be accepted. Items are evaluated on condition.",
+    conditions:[
+      {ok:true,  text:"Clean & in good condition"},
+      {ok:true,  text:"Unopened pet food welcomed"},
+      {ok:false, text:"Soiled, torn, or heavily worn items"}
+    ] },
+
+  // ── VEHICLE DONATION ──────────────────────────────────────────────────
+  { name:"Car or Vehicle Donation", category:"Vehicle Donation",
+    keywords:["car","vehicle","automobile","truck","van","suv","rv","motorhome","motorcycle","boat","trailer","car donation","donate car","donate vehicle","running car","non-running car","junk car","old car","used car","pickup truck"],
+    status:"accepted",
+    notes:"Evergreen Goodwill accepts vehicle donations through our Car Donation Program, operated by CARS. Any vehicle — cars, trucks, RVs, and more — from anywhere in America, running or not. CARS handles all the logistics, and you'll receive a tax receipt within 30 days of the sale, which allows you to deduct the final selling price on your tax return.",
+    conditions:[
+      {ok:true, text:"Any vehicle — running or not"},
+      {ok:true, text:"Cars, trucks, RVs, motorcycles, boats & more"},
+      {ok:true, text:"From anywhere in America"}
+    ],
+    carDonation: true },
+];
+
+// ── DISPOSAL RESOURCES ──────────────────────────────────────────────────────
+const DISPOSAL = {
+  hhw: { label:"Hazardous Household Waste (HHW)", counties: {
+    "King":      [
+      {name:"King County Hazardous Waste Program",          desc:"Find HHW drop-off sites for paints, chemicals, pesticides & more", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities/factoria"},
+      {name:"King County Solid Waste Facilities",           desc:"Full list of transfer stations & recycling facilities", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"}
+    ],
+    "Kitsap":    [
+      {name:"Kitsap County Solid Waste & HHW",              desc:"HHW drop-off, transfer station info, and recycling options", url:"https://www.kitsapgov.com/solidwaste/Pages/default.aspx"}
+    ],
+    "Skagit":    [
+      {name:"Skagit County Transfer & Recycling Station",   desc:"14104 Ovenell Rd, Mount Vernon — HHW facility on-site, Mon–Sun 8:30am–6pm", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}
+    ],
+    "Snohomish": [
+      {name:"Snohomish County HHW Drop-Off Station",        desc:"Accepts paints, cleaners, pesticides & more — call 425-388-3425", url:"https://www.snohomishcountywa.gov/1749/Hazardous-Waste"},
+      {name:"Snohomish Facility Locations & Hours",         desc:"Airport Road (Everett), North County & Southwest transfer stations", url:"https://www.snohomishcountywa.gov/465/Facility-Locations"}
+    ],
+    "Whatcom":   [
+      {name:"Whatcom Disposal of Toxics Facility",          desc:"3505 Airport Drive, Bellingham — accepts HHW year-round", url:"https://www.whatcomcounty.us/3296/Garbage-Recycling"},
+      {name:"Whatcom County Garbage & Recycling",           desc:"Find all 7 transfer station and drop-box locations", url:"https://www.whatcomcounty.us/3296/Garbage-Recycling"}
+    ]
+  }},
+  battery: { label:"Battery Recycling", counties: {
+    "King":      [
+      {name:"Call2Recycle Drop-Off Locator",                desc:"Find battery drop-off near you — Best Buy, Home Depot & more", url:"https://www.call2recycle.org/locator/"},
+      {name:"King County Transfer Station Recycling",       desc:"Batteries accepted at King County transfer stations", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"}
+    ],
+    "Kitsap":    [{name:"Call2Recycle Drop-Off Locator",    desc:"Find battery drop-off near you", url:"https://www.call2recycle.org/locator/"}],
+    "Skagit":    [{name:"Call2Recycle Drop-Off Locator",    desc:"Find battery drop-off near you", url:"https://www.call2recycle.org/locator/"}],
+    "Snohomish": [{name:"Call2Recycle Drop-Off Locator",    desc:"Find battery drop-off near you", url:"https://www.call2recycle.org/locator/"}],
+    "Whatcom":   [{name:"Call2Recycle Drop-Off Locator",    desc:"Find battery drop-off near you", url:"https://www.call2recycle.org/locator/"}]
+  }},
+  mattress: { label:"Mattress Recycling", counties: {
+    "King":      [
+      {name:"Mattress Recycling Council — WA Locator",      desc:"Find a free mattress drop-off site in Washington", url:"https://www.mattressrecyclingcouncil.org/find-a-drop-off-location/?state=WA"},
+      {name:"King County Transfer Stations",                desc:"Mattress drop-off accepted at King County facilities ($30/item fee)", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"}
+    ],
+    "Kitsap":    [{name:"Mattress Recycling Council — WA Locator", desc:"Find a free mattress drop-off site in Washington", url:"https://www.mattressrecyclingcouncil.org/find-a-drop-off-location/?state=WA"}],
+    "Skagit":    [
+      {name:"Mattress Recycling Council — WA Locator",      desc:"Find a free mattress drop-off site in Washington", url:"https://www.mattressrecyclingcouncil.org/find-a-drop-off-location/?state=WA"},
+      {name:"Skagit County Transfer & Recycling Station",   desc:"14104 Ovenell Rd, Mount Vernon — accepts mattresses", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}
+    ],
+    "Snohomish": [
+      {name:"Mattress Recycling Council — WA Locator",      desc:"Find a free mattress drop-off site in Washington", url:"https://www.mattressrecyclingcouncil.org/find-a-drop-off-location/?state=WA"},
+      {name:"Snohomish County Transfer Stations",           desc:"Facility locations, hours & accepted items", url:"https://www.snohomishcountywa.gov/465/Facility-Locations"}
+    ],
+    "Whatcom":   [{name:"Mattress Recycling Council — WA Locator", desc:"Find a free mattress drop-off site in Washington", url:"https://www.mattressrecyclingcouncil.org/find-a-drop-off-location/?state=WA"}]
+  }},
+  medication: { label:"Medication Disposal", counties: {
+    "King":      [{name:"King County Medication Drop-Off",        desc:"Safe disposal at pharmacies, police stations & HHW sites", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities/factoria"}],
+    "Kitsap":    [{name:"Kitsap County Solid Waste & Health",     desc:"Find medication take-back locations near you", url:"https://www.kitsapgov.com/solidwaste/Pages/default.aspx"}],
+    "Skagit":    [
+      {name:"DEA Authorized Take-Back Locator",             desc:"Find an authorized medication drop-off near you", url:"https://apps2.deadiversion.usdoj.gov/pubdispsearch/"},
+      {name:"Skagit County Public Health",                  desc:"Call 360-416-1500 for medication & sharps disposal info", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}
+    ],
+    "Snohomish": [{name:"Snohomish Safe Medication Disposal",     desc:"Find a drop-off kiosk near you", url:"https://www.snohomishcountywa.gov/5261/Medication-Disposal"}],
+    "Whatcom":   [{name:"Whatcom County Medication Disposal",     desc:"Find authorized disposal locations — contact Environmental Health at 360-778-6000", url:"https://www.whatcomcounty.us/3286/Waste-Disposal"}]
+  }},
+  appliance: { label:"Large Appliance Recycling", counties: {
+    "King":      [
+      {name:"King County Solid Waste Facilities",           desc:"Drop appliances at any King County transfer station — fees apply", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"},
+      {name:"King County Transfer Station Recycling Guide", desc:"Appliances accepted — check fees & facility hours", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/services/recycling/transfer-station-recycling"}
+    ],
+    "Kitsap":    [{name:"Kitsap County Solid Waste",               desc:"Contact your waste hauler or visit a transfer station for appliance drop-off", url:"https://www.kitsapgov.com/solidwaste/Pages/default.aspx"}],
+    "Skagit":    [{name:"Skagit County Transfer & Recycling Station", desc:"14104 Ovenell Rd, Mount Vernon — accepts appliances, Mon–Sun 8:30am–6pm", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}],
+    "Snohomish": [
+      {name:"Snohomish County Transfer Stations",           desc:"Airport Road (Everett), North County & Southwest — appliances accepted", url:"https://www.snohomishcountywa.gov/465/Facility-Locations"},
+      {name:"Snohomish County Recycling Info",              desc:"Recycling & disposal options for appliances", url:"https://www.snohomishcountywa.gov/530/Recycling"}
+    ],
+    "Whatcom":   [{name:"Whatcom County Garbage & Recycling",      desc:"Self-haul to one of 7 transfer/drop-box locations — appliances accepted", url:"https://www.whatcomcounty.us/3296/Garbage-Recycling"}]
+  }},
+  tire: { label:"Tire Recycling", counties: {
+    "King":      [
+      {name:"King County Transfer Stations — Tires",        desc:"Tires accepted at King County transfer stations — fees apply", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"},
+      {name:"Earth911 Tire Recycling Locator",              desc:"Find additional tire recycling options near you", url:"https://www.earth911.com"}
+    ],
+    "Kitsap":    [{name:"Kitsap County Solid Waste",               desc:"Contact local tire retailers — free recycling often included with new purchase", url:"https://www.kitsapgov.com/solidwaste/Pages/default.aspx"}],
+    "Skagit":    [{name:"Skagit County Transfer & Recycling Station", desc:"14104 Ovenell Rd, Mount Vernon — tires accepted for a small fee", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}],
+    "Snohomish": [{name:"Snohomish County Transfer Stations",       desc:"Tires accepted at transfer stations — call 425-388-3425 for fees", url:"https://www.snohomishcountywa.gov/465/Facility-Locations"}],
+    "Whatcom":   [{name:"Whatcom County Garbage & Recycling",       desc:"Self-haul tires to a transfer station or contact local tire retailers", url:"https://www.whatcomcounty.us/3296/Garbage-Recycling"}]
+  }},
+  lightbulb: { label:"Light Bulb Recycling", counties: {
+    "King":      [
+      {name:"LampRecycle.org Drop-Off Locator",             desc:"Find CFL & fluorescent bulb recycling near you", url:"https://www.lamprecycle.org/"},
+      {name:"King County Transfer Stations",                desc:"Fluorescent bulbs accepted — up to 10 per day for households", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"}
+    ],
+    "Kitsap":    [{name:"LampRecycle.org Drop-Off Locator", desc:"Find CFL & fluorescent bulb recycling near you", url:"https://www.lamprecycle.org/"}],
+    "Skagit":    [{name:"LampRecycle.org Drop-Off Locator", desc:"Find CFL & fluorescent bulb recycling near you", url:"https://www.lamprecycle.org/"}],
+    "Snohomish": [
+      {name:"LampRecycle.org Drop-Off Locator",             desc:"Find CFL & fluorescent bulb recycling near you", url:"https://www.lamprecycle.org/"},
+      {name:"Snohomish County Transfer Stations",           desc:"Up to 10 fluorescent bulbs accepted free at transfer stations", url:"https://www.snohomishcountywa.gov/465/Facility-Locations"}
+    ],
+    "Whatcom":   [{name:"LampRecycle.org Drop-Off Locator", desc:"Find CFL & fluorescent bulb recycling near you", url:"https://www.lamprecycle.org/"}]
+  }},
+  bulk_item: { label:"Bulky Item & Transfer Station Disposal", counties: {
+    "King":      [
+      {name:"King County Solid Waste Facilities",           desc:"8 transfer stations across King County — find nearest location, hours & fees", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"},
+      {name:"King County Transfer Station Recycling Guide", desc:"What's accepted, fees, and recycling services at each station", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/services/recycling/transfer-station-recycling"}
+    ],
+    "Kitsap":    [{name:"Kitsap County Solid Waste",               desc:"Transfer station locations, hours & accepted bulky items", url:"https://www.kitsapgov.com/solidwaste/Pages/default.aspx"}],
+    "Skagit":    [{name:"Skagit County Transfer & Recycling Station", desc:"14104 Ovenell Rd, Mount Vernon — accepts furniture, appliances & bulk items, Mon–Sun 8:30am–6pm", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}],
+    "Snohomish": [
+      {name:"Snohomish County Facility Locations & Hours",  desc:"Airport Road (Everett), North County (Marysville) & Southwest (Edmonds) transfer stations", url:"https://www.snohomishcountywa.gov/465/Facility-Locations"},
+      {name:"Snohomish County Waste Restrictions",          desc:"What's accepted at each facility", url:"https://www.snohomishcountywa.gov/2550/Waste-Restrictions"}
+    ],
+    "Whatcom":   [
+      {name:"Whatcom County Garbage & Recycling",           desc:"7 transfer station & drop-box locations across Whatcom County", url:"https://www.whatcomcounty.us/3296/Garbage-Recycling"},
+      {name:"Sanitary Service Company (SSC)",               desc:"Private hauler serving much of Whatcom County — bulk item info", url:"https://ssc-inc.com"}
+    ]
+  }},
+  textile: { label:"Textile & Fabric Recycling", counties: {
+    "King":      [
+      {name:"USAgain Textile Recycling Locator",            desc:"Find a textile drop box near you", url:"https://www.usagain.com/dropbox-locator/"},
+      {name:"King County What Do I Do With...?",            desc:"Search tool for specific items including textiles", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/services/recycling/transfer-station-recycling"}
+    ],
+    "Kitsap":    [{name:"USAgain Textile Recycling Locator", desc:"Find a textile drop box near you", url:"https://www.usagain.com/dropbox-locator/"}],
+    "Skagit":    [{name:"USAgain Textile Recycling Locator", desc:"Find a textile drop box near you", url:"https://www.usagain.com/dropbox-locator/"}],
+    "Snohomish": [{name:"USAgain Textile Recycling Locator", desc:"Find a textile drop box near you", url:"https://www.usagain.com/dropbox-locator/"}],
+    "Whatcom":   [{name:"USAgain Textile Recycling Locator", desc:"Find a textile drop box near you", url:"https://www.usagain.com/dropbox-locator/"}]
+  }},
+  firearms: { label:"Firearm Safe Surrender", counties: {
+    "King":      [{name:"King County Safe Storage & Surrender",    desc:"Gun surrender and safe storage resources", url:"https://kingcounty.gov/en/dept/dph/health-safety/injury-violence-prevention/gun-safety"}],
+    "Kitsap":    [{name:"Kitsap County Sheriff's Office",          desc:"Call (360) 337-7108 to arrange safe firearm surrender", url:"https://www.kitsapgov.com/sheriff/Pages/default.aspx"}],
+    "Skagit":    [{name:"Skagit County Sheriff's Office",          desc:"Contact for safe firearm surrender options", url:"https://www.skagitcounty.net/Departments/Sheriff/"}],
+    "Snohomish": [{name:"Snohomish County Sheriff's Office",       desc:"Contact for safe firearm surrender options", url:"https://www.snohomishcountywa.gov/sheriff"}],
+    "Whatcom":   [{name:"Whatcom County Sheriff's Office",         desc:"Call (360) 676-6911 to arrange safe firearm surrender", url:"https://www.whatcomcounty.us/sheriff"}]
+  }},
+  scrap_metal: { label:"Scrap Metal Recycling", counties: {
+    "King":      [
+      {name:"Pacific Iron & Metal (Seattle)",               desc:"Accepts scrap metal including bed frames & file cabinets", url:"https://www.pacificiron.com"},
+      {name:"King County Transfer Station Recycling",       desc:"Scrap metal accepted free at King County transfer stations", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"}
+    ],
+    "Kitsap":    [{name:"Earth911 Scrap Metal Locator",     desc:"Find a scrap metal recycler near you", url:"https://www.earth911.com"}],
+    "Skagit":    [
+      {name:"Earth911 Scrap Metal Locator",                 desc:"Find a scrap metal recycler near you", url:"https://www.earth911.com"},
+      {name:"Skagit County Transfer & Recycling Station",   desc:"Scrap metal accepted — 14104 Ovenell Rd, Mount Vernon", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}
+    ],
+    "Snohomish": [
+      {name:"Earth911 Scrap Metal Locator",                 desc:"Find a scrap metal recycler near you", url:"https://www.earth911.com"},
+      {name:"Snohomish County Transfer Stations",           desc:"Scrap metal accepted free for residential customers", url:"https://www.snohomishcountywa.gov/465/Facility-Locations"}
+    ],
+    "Whatcom":   [{name:"Earth911 Scrap Metal Locator",     desc:"Find a scrap metal recycler near you", url:"https://www.earth911.com"}]
+  }},
+  propane: { label:"Propane Tank Exchange / Disposal", counties: {
+    "King":      [{name:"Blue Rhino Tank Exchange Locator", desc:"Exchange or safely dispose of propane tanks at hardware stores & retailers", url:"https://www.bluerhino.com/find-a-location"}],
+    "Kitsap":    [{name:"Blue Rhino Tank Exchange Locator", desc:"Exchange or safely dispose of propane tanks at hardware stores & retailers", url:"https://www.bluerhino.com/find-a-location"}],
+    "Skagit":    [{name:"Blue Rhino Tank Exchange Locator", desc:"Exchange or safely dispose of propane tanks at hardware stores & retailers", url:"https://www.bluerhino.com/find-a-location"}],
+    "Snohomish": [{name:"Blue Rhino Tank Exchange Locator", desc:"Exchange or safely dispose of propane tanks at hardware stores & retailers", url:"https://www.bluerhino.com/find-a-location"}],
+    "Whatcom":   [{name:"Blue Rhino Tank Exchange Locator", desc:"Exchange or safely dispose of propane tanks at hardware stores & retailers", url:"https://www.bluerhino.com/find-a-location"}]
+  }},
+  smoke_detector: { label:"Smoke Detector Disposal", counties: {
+    "King":      [
+      {name:"King County HHW — Factoria or Bow Lake",       desc:"Drop smoke detectors at a King County HHW facility — no fee for households", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities/factoria"},
+      {name:"First Alert Manufacturer Mail-Back",           desc:"Mail your detector back to First Alert or Kidde for free safe disposal", url:"https://www.firstalert.com/pages/faq"}
+    ],
+    "Kitsap":    [{name:"First Alert Manufacturer Mail-Back", desc:"Mail your detector back to First Alert or Kidde for free safe disposal", url:"https://www.firstalert.com/pages/faq"}],
+    "Skagit":    [
+      {name:"Skagit County HHW Facility",                   desc:"14104 Ovenell Rd, Mount Vernon — accepts smoke detectors", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"},
+      {name:"First Alert Manufacturer Mail-Back",           desc:"Mail your detector back to First Alert or Kidde for free safe disposal", url:"https://www.firstalert.com/pages/faq"}
+    ],
+    "Snohomish": [
+      {name:"Snohomish County HHW Drop-Off Station",        desc:"Accepts smoke detectors — call 425-388-3425 for appointment", url:"https://www.snohomishcountywa.gov/1749/Hazardous-Waste"},
+      {name:"First Alert Manufacturer Mail-Back",           desc:"Mail your detector back to First Alert or Kidde for free safe disposal", url:"https://www.firstalert.com/pages/faq"}
+    ],
+    "Whatcom":   [
+      {name:"Whatcom Disposal of Toxics Facility",          desc:"3505 Airport Drive, Bellingham — accepts smoke detectors", url:"https://www.whatcomcounty.us/3296/Garbage-Recycling"},
+      {name:"First Alert Manufacturer Mail-Back",           desc:"Mail your detector back to First Alert or Kidde for free safe disposal", url:"https://www.firstalert.com/pages/faq"}
+    ]
+  }},
+  car_seat: { label:"Car Seat Recycling", counties: {
+    "King":      [
+      {name:"Target Car Seat Trade-In Event",               desc:"Periodic trade-in events — any brand accepted for recycling credit toward new gear", url:"https://www.target.com/c/car-seat-trade-in-event/-/N-4hzj5"},
+      {name:"Manufacturer Recycling Programs",              desc:"Many car seat manufacturers offer mail-back programs — check your brand's website", url:"https://www.cpsc.gov/Recalls"}
+    ],
+    "Kitsap":    [{name:"Target Car Seat Trade-In Event",   desc:"Periodic trade-in events — any brand accepted for recycling credit", url:"https://www.target.com/c/car-seat-trade-in-event/-/N-4hzj5"}],
+    "Skagit":    [{name:"Target Car Seat Trade-In Event",   desc:"Periodic trade-in events — any brand accepted for recycling credit", url:"https://www.target.com/c/car-seat-trade-in-event/-/N-4hzj5"}],
+    "Snohomish": [{name:"Target Car Seat Trade-In Event",   desc:"Periodic trade-in events — any brand accepted for recycling credit", url:"https://www.target.com/c/car-seat-trade-in-event/-/N-4hzj5"}],
+    "Whatcom":   [{name:"Target Car Seat Trade-In Event",   desc:"Periodic trade-in events — any brand accepted for recycling credit", url:"https://www.target.com/c/car-seat-trade-in-event/-/N-4hzj5"}]
+  }},
+  medical: { label:"Medical Waste Disposal", counties: {
+    "King":      [{name:"King County Sharps & Medical Waste",      desc:"Find authorized sharps & medical waste disposal near you", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities/factoria"}],
+    "Kitsap":    [{name:"Kitsap County Solid Waste & Health",      desc:"Contact for sharps disposal container locations", url:"https://www.kitsapgov.com/solidwaste/Pages/default.aspx"}],
+    "Skagit":    [{name:"Skagit County Public Health — Sharps",    desc:"Call 360-416-1500 — sharps & syringes NOT accepted at transfer station", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}],
+    "Snohomish": [{name:"Snohomish Sharps & Medical Disposal",     desc:"Find drop-off locations for sharps and medical waste", url:"https://www.snohomishcountywa.gov/5261/Medication-Disposal"}],
+    "Whatcom":   [{name:"Whatcom Waste Disposal & Environmental Health", desc:"Call 360-778-6000 for medical waste disposal guidance", url:"https://www.whatcomcounty.us/3286/Waste-Disposal"}]
+  }},
+  food: { label:"Food Donation", counties: {
+    "King":      [{name:"Food Lifeline — Find a Food Bank",        desc:"Locate a food bank or pantry in King County", url:"https://foodlifeline.org/get-help/find-food/"}],
+    "Kitsap":    [
+      {name:"Central Kitsap Food Bank",                     desc:"Accepts non-perishable food donations in Kitsap County", url:"https://ckfoodbank.org/"},
+      {name:"South Kitsap Helpline",                        desc:"Food bank serving South Kitsap — accepts food donations", url:"https://skhelpline.org/"}
+    ],
+    "Skagit":    [
+      {name:"Helping Hands Food Bank (Skagit)",             desc:"Multiple Skagit County locations — accepts non-perishable donations", url:"https://helpinghandsskagit.org/donate/"},
+      {name:"Community Action Skagit Food Distribution",   desc:"Centralized food distribution serving 14 Skagit County food banks", url:"https://www.communityactionskagit.org/skagit-food-distribution-center/"}
+    ],
+    "Snohomish": [{name:"Volunteers of America Food Bank",         desc:"Find food donation locations in Snohomish County", url:"https://www.voaww.org/find-help"}],
+    "Whatcom":   [{name:"Bellingham Food Bank",                    desc:"Accepts food donations in Whatcom County", url:"https://www.bellinghamfoodbank.org"}]
+  }},
+  yard_waste: { label:"Yard Waste & Composting", counties: {
+    "King":      [
+      {name:"King County Transfer Station Yard Waste",      desc:"Yard debris accepted at transfer stations — fees may apply", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"},
+      {name:"King County Composting Info",                  desc:"Composting options and yard waste guidance", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost"}
+    ],
+    "Kitsap":    [{name:"Kitsap County Solid Waste — Yard Waste",  desc:"Curbside pick-up or transfer station drop-off options", url:"https://www.kitsapgov.com/solidwaste/Pages/default.aspx"}],
+    "Skagit":    [{name:"Skagit County Transfer & Composting Site", desc:"14104 Ovenell Rd, Mount Vernon — yard waste accepted for composting", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}],
+    "Snohomish": [
+      {name:"Snohomish County Transfer Stations",           desc:"Yard & wood debris recycling at reduced rate at transfer stations", url:"https://www.snohomishcountywa.gov/465/Facility-Locations"},
+      {name:"Snohomish County Recycling Info",              desc:"Yard waste drop-off and curbside options", url:"https://www.snohomishcountywa.gov/530/Recycling"}
+    ],
+    "Whatcom":   [{name:"Whatcom County Garbage & Recycling",      desc:"Self-haul yard waste to a transfer station; City of Bellingham Clean Green site also accepts", url:"https://www.whatcomcounty.us/3296/Garbage-Recycling"}]
+  }},
+  cpsc_recall: { label:"CPSC Banned / Recalled Product Disposal", counties: {
+    "King":      [
+      {name:"CPSC Recall Lookup & Remedy",                  desc:"Search for your product to request a refund or replacement", url:"https://www.cpsc.gov/Recalls"},
+      {name:"King County Solid Waste Facilities",           desc:"For products that cannot be returned, contact your nearest transfer station", url:"https://kingcounty.gov/en/dept/dnrp/waste-services/garbage-recycling-compost/solid-waste-facilities"}
+    ],
+    "Kitsap":    [
+      {name:"CPSC Recall Lookup & Remedy",                  desc:"Search for your product to request a refund or replacement", url:"https://www.cpsc.gov/Recalls"},
+      {name:"Kitsap County Solid Waste",                    desc:"Contact for guidance on disposing of banned products", url:"https://www.kitsapgov.com/solidwaste/Pages/default.aspx"}
+    ],
+    "Skagit":    [
+      {name:"CPSC Recall Lookup & Remedy",                  desc:"Search for your product to request a refund or replacement", url:"https://www.cpsc.gov/Recalls"},
+      {name:"Skagit County Transfer & Recycling Station",   desc:"14104 Ovenell Rd, Mount Vernon — Mon–Sun 8:30am–6pm", url:"https://www.skagitcounty.net/Departments/publicworkssolidwaste/main.htm"}
+    ],
+    "Snohomish": [
+      {name:"CPSC Recall Lookup & Remedy",                  desc:"Search for your product to request a refund or replacement", url:"https://www.cpsc.gov/Recalls"},
+      {name:"Snohomish County Transfer Stations",           desc:"Facility locations and hours", url:"https://www.snohomishcountywa.gov/465/Facility-Locations"}
+    ],
+    "Whatcom":   [
+      {name:"CPSC Recall Lookup & Remedy",                  desc:"Search for your product to request a refund or replacement", url:"https://www.cpsc.gov/Recalls"},
+      {name:"Whatcom County Garbage & Recycling",           desc:"Find a transfer station or drop-box near you", url:"https://www.whatcomcounty.us/3296/Garbage-Recycling"}
+    ]
+  }},
+  animal_shelter: { label:"Animal Shelters & Humane Societies", counties: {
+    "King": [
+      {name:"Seattle Humane (Bellevue)",                desc:"13212 SE Eastgate Way, Bellevue — adoptions, surrenders & donation drop-off", url:"https://www.seattlehumane.org/ways-to-give/give-supplies/"},
+      {name:"Regional Animal Services of King County",  desc:"Kent — animal surrender, stray intake & community pet resources", url:"https://kingcounty.gov/en/dept/executive-services/animals-pets-pests/regional-animal-services"},
+      {name:"PAWS (Progressive Animal Welfare Society)", desc:"15305 44th Ave W, Lynnwood — cat & dog adoptions and supply donations", url:"https://www.paws.org"}
+    ],
+    "Kitsap": [
+      {name:"Kitsap Humane Society",                    desc:"Silverdale — donation drop bins at front doors anytime; call (360) 692-6977", url:"https://www.kitsap-humane.org/support-us/in-kind-donations/"}
+    ],
+    "Skagit": [
+      {name:"Humane Society of Skagit Valley",          desc:"18841 Kelleher Rd, Burlington — animal surrender & supply donations; call (360) 757-0445", url:"https://www.skagithumane.org"}
+    ],
+    "Snohomish": [
+      {name:"PAWS (Progressive Animal Welfare Society)", desc:"15305 44th Ave W, Lynnwood — cat & dog adoptions and in-kind donations", url:"https://www.paws.org"},
+      {name:"Everett Animal Shelter",                   desc:"333 Smith Island Rd, Everett — stray & surrender intake; call (425) 257-6000", url:"https://www.everettwa.gov/305/Animal-Services"}
+    ],
+    "Whatcom": [
+      {name:"Whatcom Humane Society",                   desc:"Bellingham — animal surrender & supply donations; call (360) 733-2080", url:"https://www.whatcomhumane.org"}
+    ]
+  }},
+  general_donation: { label:"Alternative Donation Options", counties: {
+    "King":      [
+      {name:"Freecycle Seattle",                            desc:"Give items away free to neighbors in your community", url:"https://www.freecycle.org"},
+      {name:"Buy Nothing Project",                          desc:"Find your neighborhood Buy Nothing group on Facebook", url:"https://buynothingproject.org/find-a-group/"}
+    ],
+    "Kitsap":    [{name:"Freecycle Network",                desc:"Give items away free to your community", url:"https://www.freecycle.org"}],
+    "Skagit":    [{name:"Freecycle Network",                desc:"Give items away free to your community", url:"https://www.freecycle.org"}],
+    "Snohomish": [{name:"Freecycle Network",                desc:"Give items away free to your community", url:"https://www.freecycle.org"}],
+    "Whatcom":   [{name:"Freecycle Network",                desc:"Give items away free to your community", url:"https://www.freecycle.org"}]
+  }}
+};
+
+const COUNTIES = ["King","Kitsap","Skagit","Snohomish","Whatcom"];
+let selectedCounty = null;
+let currentItem = null;
+
+const input  = document.getElementById('egnw-input');
+const sugBox = document.getElementById('egnw-suggestions');
+const result = document.getElementById('egnw-result');
+const hint   = document.getElementById('egnw-hint');
+
+function search(q) {
+  q = q.toLowerCase().trim();
+  if (!q) return [];
+  const scored = [];
+  for (const item of ITEMS) {
+    const nameLower = item.name.toLowerCase();
+    let score = 0;
+    if (nameLower === q) score = 100;
+    else if (nameLower.startsWith(q)) score = 80;
+    else if (nameLower.includes(q)) score = 60;
+    else {
+      for (const k of item.keywords) {
+        if (k === q)            { score = Math.max(score, 70); break; }
+        if (k.startsWith(q))   { score = Math.max(score, 50); }
+        else if (k.includes(q)){ score = Math.max(score, 30); }
+        else if (q.includes(k) && k.length >= 4){ score = Math.max(score, 20); }
+      }
+    }
+    if (score > 0) scored.push({ item, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 8).map(s => s.item);
+}
+
+input.addEventListener('input', function() {
+  const q = this.value;
+  if (!q.trim()) { hideSuggestions(); showHint(); hideResult(); return; }
+  const matches = search(q);
+  matches.length ? showSuggestions(matches) : hideSuggestions();
+});
+
+input.addEventListener('keydown', function(e) {
+  const items = sugBox.querySelectorAll('.egnw-suggestion');
+  const active = sugBox.querySelector('.egnw-suggestion.active');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = active ? active.nextElementSibling : items[0];
+    if (next) { active && active.classList.remove('active'); next.classList.add('active'); }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = active ? active.previousElementSibling : items[items.length-1];
+    if (prev) { active && active.classList.remove('active'); prev.classList.add('active'); }
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const a = sugBox.querySelector('.egnw-suggestion.active') || items[0];
+    if (a) a.click();
+  } else if (e.key === 'Escape') { hideSuggestions(); }
+});
+
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('egnw-checker').contains(e.target)) hideSuggestions();
+});
+
+function showSuggestions(matches) {
+  sugBox.innerHTML = '';
+  matches.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'egnw-suggestion';
+    div.setAttribute('role','option');
+    div.innerHTML = `<span class="sug-dot ${item.status}"></span><span style="flex:1">${item.name}</span><span class="sug-category">${item.category}</span>`;
+    div.addEventListener('click', () => selectItem(item));
+    sugBox.appendChild(div);
+  });
+  sugBox.style.display = 'block';
+  input.setAttribute('aria-expanded','true');
+}
+
+function hideSuggestions() { sugBox.style.display='none'; input.setAttribute('aria-expanded','false'); }
+function showHint() { hint.style.display='block'; }
+function hideHint() { hint.style.display='none'; }
+function hideResult() { result.style.display='none'; result.innerHTML=''; }
+
+function selectItem(item) {
+  currentItem = item;
+  input.value = item.name;
+  hideSuggestions(); hideHint(); renderResult(item);
+}
+
+function renderResult(item) {
+  const ok = item.status === 'accepted';
+  let condHTML = '';
+  if (item.conditions && item.conditions.length) {
+    condHTML = `<div class="result-section">
+      <div class="result-section-label">Condition notes</div>
+      <div class="condition-chips">${item.conditions.map(c=>`<span class="chip ${c.ok?'ok':'no'}">${c.ok?'✓':'✗'} ${c.text}</span>`).join('')}</div>
+    </div>`;
+  }
+  let carHTML = '';
+  let elecHTML = '';
+  if (item.carDonation) {
+    carHTML = `<div class="car-donation-notice">
+      <p><strong>Donate your vehicle through Evergreen Goodwill's Car Donation Program</strong>, operated by CARS. We accept any vehicle — cars, trucks, RVs, and more — from anywhere in America, running or not. CARS handles everything from pick-up to sale.</p>
+      <p>You'll receive a <strong>tax receipt within 30 days</strong> of the sale, allowing you to deduct the final selling price on your tax return.</p>
+      <a class="car-donate-btn" href="https://careasy.org/nonprofit/seattle-goodwill-industries" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+        Donate your vehicle online
+      </a>
+      <br><a class="car-phone" href="tel:+18663984483">Or call (866) 398-4483 — ask for your donation to go to Evergreen Goodwill</a>
+    </div>`;
+  }
+  if (item.electronics) {
+    elecHTML = `<div class="electronics-notice">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <p><strong>Electronics policy:</strong> All donated electronics are thoroughly evaluated. Any existing data on relevant devices is erased using <strong>certified technologies</strong>. Items that cannot be sold are recycled responsibly through <strong>E-Cycle Washington</strong>, ensuring toxic materials stay out of our landfills.</p>
+    </div>`;
+  }
+  let disposalHTML = '';
+  if (!ok && item.disposal) {
+    disposalHTML = !selectedCounty
+      ? `<div class="county-picker-wrap">
+           <div class="county-picker-label">📍 Select your county to see disposal options:</div>
+           <div class="county-buttons">${COUNTIES.map(c=>`<button class="county-btn" onclick="window._egnwSetCounty('${c}')">${c}</button>`).join('')}</div>
+         </div>`
+      : renderDisposal(item.disposal, selectedCounty);
+  }
+  result.style.display = 'block';
+  result.innerHTML = `
+    <div class="egnw-result-card ${item.status}">
+      <div class="result-header">
+        <div class="result-header-inner">
+          <div class="result-status">
+            ${ok
+              ? `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Yes, we accept this!`
+              : `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> We cannot accept this`}
+          </div>
+          <div class="result-item-name">${item.name} &nbsp;·&nbsp; ${item.category}</div>
+        </div>
+      </div>
+      <div class="result-body">
+        ${carHTML}
+        ${elecHTML}
+        <div class="result-section">
+          <div class="result-section-label">Details</div>
+          <div class="result-section-text">${item.notes}</div>
+        </div>
+        ${condHTML}
+        ${disposalHTML}
+      </div>
+    </div>`;
+}
+
+function renderDisposal(key, county) {
+  const cat = DISPOSAL[key]; if (!cat) return '';
+  const links = cat.counties[county] || []; if (!links.length) return '';
+  const btns = COUNTIES.map(c=>`<button class="county-btn${c===county?' selected':''}" onclick="window._egnwSetCounty('${c}')">${c}</button>`).join('');
+  return `
+    <div class="county-picker-wrap">
+      <div class="county-picker-label">📍 Showing disposal options for ${county} County:</div>
+      <div class="county-buttons">${btns}</div>
+    </div>
+    <div class="result-section">
+      <div class="result-section-label">${cat.label} — where to take it</div>
+      <div class="disposal-links">${links.map(l=>`
+        <a class="disposal-link" href="${l.url}" target="_blank" rel="noopener">
+          <div class="disposal-link-icon"><svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
+          <div class="disposal-link-text">
+            <div class="disposal-link-name">${l.name}</div>
+            <div class="disposal-link-desc">${l.desc}</div>
+          </div>
+        </a>`).join('')}
+      </div>
+    </div>`;
+}
+
+window._egnwSetCounty = function(county) {
+  selectedCounty = county;
+  if (currentItem) renderResult(currentItem);
+};
+
+})();
+</script>
+</body>
+</html>
